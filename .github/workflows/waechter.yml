@@ -1,0 +1,34 @@
+name: Signal-Waechter
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # jede Stunde (UTC), kurz nach Kerzenschluss
+  workflow_dispatch:       # manuell starten (Button "Run workflow")
+
+permissions:
+  contents: write
+
+concurrency:
+  group: waechter
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Märkte prüfen
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python signal_waechter.py --einmal
+      - name: Zustand speichern
+        run: |
+          git config user.name "signal-waechter"
+          git config user.email "actions@github.com"
+          git add zustand.json signale_log.txt 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "Zustand aktualisiert" && git push)
