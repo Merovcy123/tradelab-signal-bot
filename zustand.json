@@ -12,8 +12,9 @@
       "sma": 76711.65849999999,
       "atr": 2479.8257142857133,
       "trend": false,
-      "status": "kein_trade"
+      "status": "kein_trade",
+      "gemeldet": true
     }
   },
-  "_letzte_5m": 1794697500
+  "_letzte_5m": 1794698100
 }
