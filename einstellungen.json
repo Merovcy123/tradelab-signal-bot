@@ -9,5 +9,7 @@
   "ruecksetzer_atr": 0.3,
   "stop_atr": 0.8,
   "ziel_r": 2.0,
-  "max_stunden": 48
+  "max_stunden": 48,
+  "start_ch": "07:45",
+  "nachricht_ab_ch": "07:00"
 }

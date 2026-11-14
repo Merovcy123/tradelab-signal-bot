@@ -4,14 +4,16 @@ TradeLab V3 – Signal-Wächter "Rücksetzer nur Long, Ziel 2R" (NUR Hinweise, K
 
 Strategie (Backtest BTC 2021–2026, Limit-Einstieg, nach Gebühren):
   1) Trendfilter : Tages-Schlusskurs von gestern > SMA 20 (Tage). Sonst heute kein Trade.
-  2) Einstieg    : Kauf-Limit = Tageseröffnung (00:00 UTC) - 0,3 x ATR(14 Tage). Gültig bis Tagesende UTC.
+  2) Einstieg    : Kauf-Limit = Tageseröffnung (00:00 UTC) - 0,3 x ATR(14 Tage).
+                   Aktiv erst ab 07:45 Uhr (CH) bis Tagesende UTC. War der Preis schon vor 07:45
+                   unter dem Limit, gibt es heute keinen Trade ("verpasst").
   3) Stop-Loss   : Einstieg - 0,8 x ATR
   4) Ziel        : Einstieg + 2 x Stopabstand (2R)
   5) Zeit-Ausstieg: nach 48 Stunden zum Marktpreis schliessen
   6) Risiko      : risiko_prozent vom Konto pro Trade
 Markt: BTCUSDT (Binance). Max. 1 Trade pro Tag.
 
-Jeden Tag kurz nach 01:00 Uhr (CH) kommt eine Tagesnachricht:
+Jeden Tag ca. 07:00–07:30 Uhr (CH) kommt eine Tagesnachricht:
   - entweder die fertige Limit-Order (Kauf, Stop, Ziel, Menge)
   - oder "heute kein Trade" (Trend nach unten)
 
@@ -42,6 +44,8 @@ STANDARD_CFG = {
     "stop_atr": 0.8,
     "ziel_r": 2.0,
     "max_stunden": 48,
+    "start_ch": "07:45",
+    "nachricht_ab_ch": "07:00",
     "telegram_token": "",
     "telegram_chat_id": "",
 }
@@ -58,14 +62,24 @@ def zeit(ts):
     return datetime.fromtimestamp(ts, timezone.utc).strftime("%d.%m.%Y %H:%M")
 
 
-def zeit_ch(ts):
-    """Schweizer Zeit (MEZ/MESZ, einfache Regel: letzter Sonntag März/Oktober)."""
+def ch_offset(ts):
+    """Stunden Schweizer Zeit vor UTC (MEZ 1 / MESZ 2; letzter Sonntag März/Oktober)."""
     d = datetime.fromtimestamp(ts, timezone.utc)
     def letzter_sonntag(jahr, monat):
         x = datetime(jahr, monat + 1, 1, tzinfo=timezone.utc) - timedelta(days=1)
         return x - timedelta(days=(x.weekday() + 1) % 7)
     sommer = letzter_sonntag(d.year, 3).replace(hour=1) <= d < letzter_sonntag(d.year, 10).replace(hour=1)
-    return (d + timedelta(hours=2 if sommer else 1)).strftime("%d.%m. %H:%M")
+    return 2 if sommer else 1
+
+
+def zeit_ch(ts):
+    return (datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=ch_offset(ts))).strftime("%d.%m. %H:%M")
+
+
+def ch_uhr_utc(tag_ts, hhmm):
+    """UTC-Zeitstempel für eine Schweizer Uhrzeit (z. B. "07:45") am UTC-Tag tag_ts."""
+    h, m = (int(x) for x in hhmm.split(":"))
+    return tag_ts + (h - ch_offset(tag_ts + 12 * 3600)) * 3600 + m * 60
 
 
 def log(text):
@@ -178,7 +192,8 @@ def tagesplan(cfg, tage):
         trs.append(max(x["h"] - x["l"], abs(x["h"] - v["c"]), abs(x["l"] - v["c"])))
     atr = sum(trs) / n_atr
     plan = dict(tag=heute["t"], eroeffnung=heute["o"], gestern_schluss=schluss, sma=sma, atr=atr,
-                trend=schluss > sma, status="wartet")
+                trend=schluss > sma, status="wartet", start=ch_uhr_utc(heute["t"], cfg["start_ch"]),
+                gemeldet=False)
     if plan["trend"]:
         limit = heute["o"] - cfg["ruecksetzer_atr"] * atr
         abstand = cfg["stop_atr"] * atr
@@ -194,6 +209,9 @@ def tagesnachricht(plan, cfg, konto, offen):
     if not plan["trend"]:
         text = (f"Heute KEIN Trade: Trend nach unten.\n"
                 f"Gestern Schluss {fmt(plan['gestern_schluss'])} liegt unter SMA {cfg['sma_tage']} ({fmt(plan['sma'])}).")
+    elif plan["status"] == "verpasst":
+        text = (f"Heute KEIN Trade: Der Preis war schon in der Nacht unter dem Limit {fmt(plan['limit'])}.\n"
+                f"Nichts eingeben.")
     else:
         risiko = konto * cfg["risiko_prozent"] / 100
         menge = risiko / plan["abstand"]
@@ -202,6 +220,7 @@ def tagesnachricht(plan, cfg, konto, offen):
                 f"• Stop-Loss: {fmt(plan['stop'])}  (−{fmt(plan['abstand'] / plan['limit'] * 100)} %)\n"
                 f"• Ziel (2R): {fmt(plan['ziel'])}\n"
                 f"• Menge: {fmt(menge, 4)} {name}  (Risiko {fmt(risiko, 0)} USD)\n"
+                f"• Um {cfg['start_ch']} Uhr eingeben – NUR wenn BTC dann noch ÜBER {fmt(plan['limit'])} steht.\n"
                 f"• Limit gültig bis {ende} Uhr. Wird es nicht erreicht: Order löschen.\n"
                 f"• Nach 48 h ohne Stop/Ziel: zum Marktpreis verkaufen.\n"
                 f"Eröffnung {fmt(plan['eroeffnung'])} · ATR {fmt(plan['atr'])}")
@@ -262,7 +281,15 @@ def kerzen_verarbeiten(kerzen, zustand, cfg):
         # 2) Limit des Tages ausgelöst?
         tag = str(x["t"] - x["t"] % TAG)
         p = plaene.get(tag)
-        if p and p["status"] == "wartet" and x["l"] <= p["limit"]:
+        if p and p["status"] == "wartet" and x["t"] < p.get("start", 0):
+            if x["l"] <= p["limit"]:
+                p["status"] = "verpasst"
+                if p.get("gemeldet"):
+                    telegram_senden(f"⚠️ {cfg['symbol'].replace('USDT', '')}: heute KEIN Trade",
+                                    f"Preis fiel schon vor {cfg['start_ch']} Uhr unter das Limit {fmt(p['limit'])}. "
+                                    f"Order NICHT eingeben bzw. löschen.")
+                log(f"Plan {zeit(p['tag'])}: verpasst (Limit vor Start erreicht)")
+        elif p and p["status"] == "wartet" and x["l"] <= p["limit"]:
             einstieg = min(p["limit"], x["o"])
             risiko = j["konto"] * cfg["risiko_prozent"] / 100
             menge = risiko / p["abstand"]
@@ -320,6 +347,7 @@ def runde(cfg, zustand, test=False):
     j = journal_zustand(zustand, cfg)
     if test:
         tagesnachricht(plan, cfg, j["konto"], j["offen"])
+        print(f" Start Limit: {zeit_ch(plan['start'])} Uhr CH")
         return
     plaene = zustand.setdefault("_plaene", {})
     if "_letzte_5m" not in zustand:  # erster Start: nur ab jetzt zählen
@@ -329,9 +357,12 @@ def runde(cfg, zustand, test=False):
         plaene[tag] = plan
         log(f"Tagesplan {zeit(plan['tag'])}: " + (f"Limit {fmt(plan['limit'])}, Stop {fmt(plan['stop'])}, Ziel {fmt(plan['ziel'])}"
                                                   if plan["trend"] else "kein Trade (unter SMA)"))
-        tagesnachricht(plan, cfg, j["konto"], j["offen"])
     kerzen = binance(sym, "5m", 1000)
     kerzen_verarbeiten(kerzen, zustand, cfg)
+    p = plaene[tag]
+    if not p.get("gemeldet") and time.time() >= ch_uhr_utc(p["tag"], cfg["nachricht_ab_ch"]):
+        tagesnachricht(p, cfg, j["konto"], j["offen"])
+        p["gemeldet"] = True
     wochenbericht(zustand, cfg)
     p = plaene[tag]
     print(f" {sym}: Plan heute = {p['status']}" + (f" · Limit {fmt(p.get('limit'))}" if p.get("limit") else "")
