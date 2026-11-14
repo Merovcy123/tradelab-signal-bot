@@ -244,6 +244,82 @@ def auswerten(k, trend, cfg):
     return ereignisse
 
 
+
+# ---------------------------------------------------------------- Journal (Papierhandel, automatisch)
+JOURNAL_DATEI = os.path.join(HIER, "journal.csv")
+JOURNAL_KOPF = "eroeffnet_utc;geschlossen_utc;markt;einstieg;stop;ausstieg;grund;menge;gewinn_usd;r;konto_usd\n"
+
+
+def journal_zustand(zustand, cfg):
+    j = zustand.setdefault("_journal", {})
+    j.setdefault("konto", float(cfg["kontostand_usd"]))
+    j.setdefault("offen", {})
+    return j
+
+
+def journal_verarbeiten(symbol, name, k, ev, bereits, zustand, cfg):
+    """Spielt neue, abgeschlossene Kerzen nach: Einstieg, Stop, Ausstieg -> journal.csv + Telegram."""
+    j = journal_zustand(zustand, cfg)
+    for x, e in zip(k, ev):
+        if bereits is None:
+            if x is not k[-1]:
+                continue
+        elif x["t"] <= bereits:
+            continue
+        zeit = datetime.fromtimestamp(x["t"], timezone.utc).strftime("%d.%m.%Y %H:%M")
+        if e["neu"] and symbol not in j["offen"]:
+            risiko = j["konto"] * cfg["risiko_prozent"] / 100
+            abstand = e["entry"] - e["stop"]
+            if abstand > 0:
+                menge = risiko / abstand
+                j["offen"][symbol] = dict(zeit=zeit, einstieg=e["entry"], stop=e["stop"], menge=menge, risiko=risiko)
+                telegram_senden(f"📒 Journal: GEKAUFT {name}",
+                                f"Einstieg {fmt(e['entry'])} · Stop {fmt(e['stop'])} · Menge {fmt(menge, 4)} · "
+                                f"Risiko {fmt(risiko, 0)} USD · Konto {fmt(j['konto'], 0)} USD")
+                log(f"JOURNAL: gekauft {name} zu {fmt(e['entry'])}, Stop {fmt(e['stop'])}")
+        t = j["offen"].get(symbol)
+        if t and (e["stop_hit"] or e["raus"]):
+            if e["stop_hit"]:
+                preis, grund = min(x["o"], t["stop"]), "Stop"
+            else:
+                preis, grund = x["c"], "Ausstieg 10er-Tief"
+            gewinn = (preis - t["einstieg"]) * t["menge"]
+            r = gewinn / t["risiko"] if t["risiko"] else 0
+            j["konto"] += gewinn
+            neu_datei = not os.path.exists(JOURNAL_DATEI)
+            with open(JOURNAL_DATEI, "a", encoding="utf-8") as f:
+                if neu_datei:
+                    f.write(JOURNAL_KOPF)
+                f.write(f"{t['zeit']};{zeit};{name};{t['einstieg']:.4f};{t['stop']:.4f};{preis:.4f};{grund};"
+                        f"{t['menge']:.6f};{gewinn:.2f};{r:.2f};{j['konto']:.2f}\n")
+            zeichen = "✅" if gewinn >= 0 else "❌"
+            telegram_senden(f"{zeichen} Journal: GESCHLOSSEN {name} ({grund})",
+                            f"Einstieg {fmt(t['einstieg'])} → Ausstieg {fmt(preis)} · "
+                            f"Ergebnis {gewinn:+,.0f} USD ({r:+.2f} R) · Konto {fmt(j['konto'], 0)} USD".replace(",", "'"))
+            log(f"JOURNAL: geschlossen {name} ({grund}) {gewinn:+.2f} USD")
+            del j["offen"][symbol]
+
+
+def wochenbericht(zustand, cfg):
+    """Sonntags ab 18 Uhr UTC einmal pro Woche eine Übersicht per Telegram."""
+    jetzt_utc = jetzt()
+    woche = jetzt_utc.strftime("%G-W%V")
+    j = journal_zustand(zustand, cfg)
+    if jetzt_utc.weekday() != 6 or jetzt_utc.hour < 18 or j.get("bericht_woche") == woche:
+        return
+    trades = []
+    if os.path.exists(JOURNAL_DATEI):
+        with open(JOURNAL_DATEI, encoding="utf-8") as f:
+            trades = [z.strip().split(";") for z in f.readlines()[1:] if z.strip()]
+    gewinne = [float(t[8]) for t in trades]
+    start = float(cfg["kontostand_usd"])
+    text = (f"Trades total: {len(gewinne)} · Gewinner: {sum(g > 0 for g in gewinne)} · Verlierer: {sum(g <= 0 for g in gewinne)}\n"
+            f"Gewinn/Verlust total: {sum(gewinne):+,.0f} USD ({(j['konto'] / start - 1) * 100:+.2f} %)\n"
+            f"Konto: {fmt(j['konto'], 0)} USD · Offene Positionen: {', '.join(j['offen']) or 'keine'}").replace(",", "'")
+    telegram_senden("📊 Wochenbericht TradeLab V2", text)
+    j["bericht_woche"] = woche
+
+
 # ---------------------------------------------------------------- Markt prüfen
 def fmt(x, nachkomma=2):
     return "-" if x is None else f"{x:,.{nachkomma}f}".replace(",", "'")
@@ -313,6 +389,9 @@ def pruefe_markt(symbol, art, cfg, zustand, test=False):
                 benachrichtigen(f"VERPASST: AUSSTIEG {name}", f"Ausstieg am {zeit} UTC (Schluss unter 10er-Tief).")
                 log(f"*** VERPASST: AUSSTIEG {name} am {zeit} UTC")
 
+    if not test:
+        journal_verarbeiten(symbol, name, k, ev, bereits, zustand, cfg)
+
     neu = bereits != letzte["t"]
     if neu or test:
         if e["kauf"]:
@@ -344,6 +423,7 @@ def runde(cfg, zustand, test=False, speichern=True):
         except Exception as e:
             zeilen.append(f"{s:<10} FEHLER: {e}")
     if speichern:
+        wochenbericht(zustand, cfg)
         speichere_json(STATE_DATEI, zustand)
     return zeilen
 
