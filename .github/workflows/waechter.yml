@@ -2,8 +2,8 @@ name: Signal-Waechter
 
 on:
   schedule:
-    - cron: "37 * * * *"        # jede Stunde (UTC): Kauf/Stop/Ziel/48h prüfen
-    - cron: "3,18,33 5,6 * * *"  # Morgen: Tagesplan ab 07:00 Uhr CH (Winter 06:xx UTC, Sommer 05:xx UTC)
+    - cron: "37 * * * *"   # Reserve: GitHub-Zeitplan (oft verspätet)
+  # Hauptzeitgeber: cron-job.org startet den Bot jede Stunde um xx:02 Uhr (CH) -> Tagesplan um 07:02
   workflow_dispatch:       # manuell starten (Button "Run workflow")
 
 permissions:
