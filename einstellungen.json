@@ -1,20 +1,13 @@
 {
+  "strategie": "V3 Rücksetzer Long 2R",
+  "symbol": "BTCUSDT",
   "kontostand_usd": 100000,
-  "risiko_prozent": 0.5,
+  "risiko_prozent": 0.25,
   "pruefen_alle_minuten": 10,
-  "krypto_4h": [
-    "BTCUSDT",
-    "ETHUSDT"
-  ],
-  "aktien_1d": [
-    "AAPL",
-    "MSFT",
-    "AMZN",
-    "SPY"
-  ],
-  "einstieg_kerzen": 20,
-  "ausstieg_kerzen": 10,
-  "sma_tage": 200,
-  "atr_laenge": 14,
-  "stop_atr": 2.0
+  "sma_tage": 20,
+  "atr_tage": 14,
+  "ruecksetzer_atr": 0.3,
+  "stop_atr": 0.8,
+  "ziel_r": 2.0,
+  "max_stunden": 48
 }

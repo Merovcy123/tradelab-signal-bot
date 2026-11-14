@@ -1,26 +1,3 @@
 {
-  "BTCUSDT": {
-    "letzte_kerze": 1794657600,
-    "status": "Kein Trade (unter SMA 200)"
-  },
-  "ETHUSDT": {
-    "letzte_kerze": 1794657600,
-    "status": "Kein Trade (unter SMA 200)"
-  },
-  "AAPL": {
-    "letzte_kerze": 1794580200,
-    "status": "Position offen"
-  },
-  "MSFT": {
-    "letzte_kerze": 1794580200,
-    "status": "Kein Signal"
-  },
-  "AMZN": {
-    "letzte_kerze": 1794580200,
-    "status": "Kein Signal"
-  },
-  "SPY": {
-    "letzte_kerze": 1794580200,
-    "status": "Setup in Vorbereitung"
-  }
+  "_strategie": "V3 R\u00fccksetzer Long 2R"
 }
