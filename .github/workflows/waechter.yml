@@ -2,7 +2,8 @@ name: Signal-Waechter
 
 on:
   schedule:
-    - cron: "7 * * * *"   # jede Stunde (UTC), kurz nach Kerzenschluss
+    - cron: "37 * * * *"        # jede Stunde (UTC): Kauf/Stop/Ziel/48h prüfen
+    - cron: "3,18,33 5,6 * * *"  # Morgen: Tagesplan ab 07:00 Uhr CH (Winter 06:xx UTC, Sommer 05:xx UTC)
   workflow_dispatch:       # manuell starten (Button "Run workflow")
 
 permissions:
