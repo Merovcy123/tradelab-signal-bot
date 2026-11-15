@@ -14,7 +14,18 @@
       "trend": false,
       "status": "kein_trade",
       "gemeldet": true
+    },
+    "1794700800": {
+      "tag": 1794700800,
+      "eroeffnung": 64150.01,
+      "gestern_schluss": 64150.0,
+      "sma": 75911.454,
+      "atr": 2797.269285714285,
+      "trend": false,
+      "status": "kein_trade",
+      "start": 1794725100,
+      "gemeldet": false
     }
   },
-  "_letzte_5m": 1794699300
+  "_letzte_5m": 1794700500
 }
