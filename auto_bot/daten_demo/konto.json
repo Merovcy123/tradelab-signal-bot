@@ -3,5 +3,6 @@
  "konto": 100.0,
  "hoch": 100.0,
  "halt": false,
- "fehler_in_folge": 0
+ "fehler_in_folge": 0,
+ "bericht_woche": "2026-W46"
 }
