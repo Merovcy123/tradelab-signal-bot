@@ -1,2 +1,6 @@
 __pycache__/
 *.tmp
+auto_bot/daten/
+auto_bot/tests/replay_journal.csv
+.env
+*.env

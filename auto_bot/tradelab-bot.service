@@ -1,0 +1,16 @@
+[Unit]
+Description=TradeLab V3 Auto-Bot (OKX)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/tradelab-signal-bot/auto_bot
+Environment=TRADELAB_ENV=/home/ubuntu/.tradelab.env
+Environment=TRADELAB_DATEN=/home/ubuntu/tradelab-daten
+ExecStart=/usr/bin/python3 /home/ubuntu/tradelab-signal-bot/auto_bot/bot.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

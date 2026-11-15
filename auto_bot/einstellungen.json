@@ -1,0 +1,9 @@
+{
+  "modus": "demo",
+  "handel_aktiv": true,
+  "risiko_prozent": 0.25,
+  "max_offen": 2,
+  "rueckgang_stopp_prozent": 3.0,
+  "max_einsatz_usdt": 0,
+  "pruefen_sekunden": 60
+}
