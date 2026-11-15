@@ -451,6 +451,8 @@ def main():
 
 def test_order(broker, melder, name="Broker"):
     """Demo-Test: Konto lesen, Limit-Kauf weit unter Markt setzen und löschen."""
+    k, s = broker.key if hasattr(broker, "key") else "", getattr(broker, "secret", "")
+    print(f"Diagnose: KEY_ID Länge {len(k)}, beginnt mit PK: {k.startswith('PK')} · SECRET Länge {len(s)} · URL {getattr(broker, 'basis', '')}")
     usd, btc, gesamt = broker.guthaben()
     print(f"Konto ok: frei {usd:.2f} · BTC {btc} · gesamt {gesamt:.2f}")
     preis = broker.preis()
