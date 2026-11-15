@@ -1,0 +1,7 @@
+{
+  "start_kapital": 100.0,
+  "risiko_prozent": 3.0,
+  "max_offen_gesamt": 99,
+  "rueckgang_stopp_prozent": 40.0,
+  "handel_aktiv": true
+}

@@ -11,12 +11,14 @@ def _hole(url):
 
 
 class Daten:
-    def __init__(self, melden=None):
+    def __init__(self, melden=None, symbol="BTCUSDT"):
+        self.symbol = symbol
+        self.okx_id = symbol.replace("USDT", "-USDT")
         self.quelle = "binance"
         self.melden = melden or (lambda t: None)
 
     def _binance(self, intervall, limit=None, start=None):
-        q = f"symbol=BTCUSDT&interval={intervall}&limit={limit or 1000}"
+        q = f"symbol={self.symbol}&interval={intervall}&limit={limit or 1000}"
         if start:
             q += f"&startTime={int(start) * 1000}"
         roh = _hole(f"https://data-api.binance.vision/api/v3/klines?{q}")
@@ -26,7 +28,7 @@ class Daten:
 
     def _okx(self, bar, limit=300, start=None):
         # OKX liefert neueste zuerst; 1Dutc = Tageskerze ab 00:00 UTC
-        roh = _hole(f"https://www.okx.com/api/v5/market/candles?instId=BTC-USDT&bar={bar}&limit={limit}")["data"]
+        roh = _hole(f"https://www.okx.com/api/v5/market/candles?instId={self.okx_id}&bar={bar}&limit={limit}")["data"]
         out = [dict(t=int(k[0]) // 1000, o=float(k[1]), h=float(k[2]), l=float(k[3]), c=float(k[4]),
                     fertig=k[8] == "1") for k in reversed(roh)]
         return [x for x in out if not start or x["t"] >= start]
@@ -36,12 +38,12 @@ class Daten:
             d = f_binance()
             if self.quelle != "binance":
                 self.quelle = "binance"
-                self.melden("✅ Datenquelle wieder Binance.")
+                self.melden(f"✅ {self.symbol}: Datenquelle wieder Binance.")
             return d
         except Exception as e:
             if self.quelle != "okx":
                 self.quelle = "okx"
-                self.melden(f"🚨 Binance-Daten nicht erreichbar ({e}). Ersatz: OKX-Kerzen.")
+                self.melden(f"🚨 {self.symbol}: Binance-Daten nicht erreichbar ({e}). Ersatz: OKX-Kerzen.")
             return f_okx()
 
     def tage(self, anzahl=60):

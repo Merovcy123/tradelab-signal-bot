@@ -1,4 +1,4 @@
-name: Auto-Bot (Alpaca Paper)
+name: Auto-Bot (P4 Simulation)
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       test_order:
-        description: "Nur Test-Order (Kauf weit unter Markt setzen + löschen)"
+        description: "Nur Alpaca-Test-Order (Kauf weit unter Markt setzen + löschen)"
         type: boolean
         default: false
 
@@ -41,15 +41,16 @@ jobs:
           if [ "${{ inputs.test_order }}" = "true" ]; then
             python auto_bot/bot.py --test-order
           else
-            python auto_bot/bot.py --einmal
+            # P4: 5 Strategien als Simulation mit Live-Kursen (Alpaca-V3-Bot pausiert, Code bleibt)
+            python auto_bot/p4_bot.py
           fi
       - name: Zustand speichern
         if: always()
         run: |
           git config user.name "tradelab-auto-bot"
           git config user.email "actions@github.com"
-          for f in auto_bot/daten/zustand.json auto_bot/daten/journal.csv; do [ -f "$f" ] && git add "$f"; done
+          for f in auto_bot/daten/zustand.json auto_bot/daten/journal.csv auto_bot/daten_p4/zustand.json auto_bot/daten_p4/journal.csv; do [ -f "$f" ] && git add "$f"; done
           git diff --cached --quiet && exit 0
-          git commit -m "Auto-Bot Zustand"
+          git commit -m "P4-Bot Zustand"
           for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
           exit 1

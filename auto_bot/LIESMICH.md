@@ -68,3 +68,14 @@ In `einstellungen.json` `"modus": "live"` und `"max_einsatz_usdt"` > 0 setzen, *
 - Journal rechnet immer echte Alpaca-Gebühren (0,15 % Maker / 0,25 % Taker) ein.
 - Test: Actions → "Auto-Bot (Alpaca Paper)" → Run workflow → Haken "Nur Test-Order".
 - Zustand + Journal: `auto_bot/daten/` (wird nach jedem Lauf committet).
+
+## P4 – 5 Strategien als Simulation (aktiv seit 15.11.2026)
+
+- Datei `p4_bot.py`, Einstellungen `p4_einstellungen.json`, Daten `daten_p4/`.
+- Strategien: BTC Long (SMA 50), ETH Long (SMA 50), ETH Short (SMA 20), ADA Short (SMA 20), SOL Long (SMA 20).
+- Regeln wie V3: Limit = Eröffnung ∓ 0.3 ATR, aktiv 07:45 CH bis 20:00 UTC, Stop 0.8 ATR, Ziel 2R, 48 h, max 2 offen pro Strategie.
+- Simulation: füllt Orders anhand echter 5-Min-Kerzen von Binance (wie Backtest), Gebühren OKX-Perpetual 0.09 %.
+- Start 100, Risiko 3 % pro Trade. Not-Aus bei −40 % vom Höchststand.
+- Backtest ab Jul 2024: ca. 5 Trades/Woche, PF 1.33, max. Rückgang 10.8 R.
+- Test: `python tests/p4_replay.py <ordner_mit_pickles> 2026-06-01 2026-10-31` (Bot-Replay = Backtest ±1 Trade).
+- Der Alpaca-V3-Bot (`bot.py`) ist pausiert; Code und Secrets bleiben für später.
