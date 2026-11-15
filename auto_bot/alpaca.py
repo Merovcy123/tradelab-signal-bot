@@ -27,10 +27,11 @@ class Alpaca:
         self.z = zustand if zustand is not None else {}  # wird vom Bot gesetzt (für Ziel-Prüfung)
 
     # ------------------------------------------------------------ Grundlagen
-    def _req(self, methode, pfad, body=None, versuche=3, basis=None):
+    def _req(self, methode, pfad, body=None, versuche=3, basis=None, auth=True):
         url = (basis or self.basis) + pfad
-        h = {"APCA-API-KEY-ID": self.key, "APCA-API-SECRET-KEY": self.secret,
-             "Content-Type": "application/json", "User-Agent": "TradeLab-Bot"}
+        h = {"Content-Type": "application/json", "User-Agent": "TradeLab-Bot"}
+        if auth:
+            h.update({"APCA-API-KEY-ID": self.key, "APCA-API-SECRET-KEY": self.secret})
         daten = json.dumps(body).encode() if body is not None else None
         letzter = None
         for v in range(versuche):
@@ -57,7 +58,7 @@ class Alpaca:
 
     def preis(self):
         d = self._req("GET", "/v1beta3/crypto/us/latest/trades?symbols=" + urllib.parse.quote(SYMBOL, safe=""),
-                      basis="https://data.alpaca.markets")
+                      basis="https://data.alpaca.markets", auth=False)  # Krypto-Kurse sind öffentlich
         return float(d["trades"][SYMBOL]["p"])
 
     def guthaben(self):

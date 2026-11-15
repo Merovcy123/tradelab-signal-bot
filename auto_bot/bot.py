@@ -450,7 +450,9 @@ def main():
         time.sleep(cfg["pruefen_sekunden"])
 
 def test_order(broker, melder, name="Broker"):
-    """Demo-Test: Limit-Kauf weit unter Markt setzen und löschen."""
+    """Demo-Test: Konto lesen, Limit-Kauf weit unter Markt setzen und löschen."""
+    usd, btc, gesamt = broker.guthaben()
+    print(f"Konto ok: frei {usd:.2f} · BTC {btc} · gesamt {gesamt:.2f}")
     preis = broker.preis()
     inst = broker.instrument()
     px = runde_preis(preis * 0.5, inst["tickSz"])
@@ -460,7 +462,8 @@ def test_order(broker, melder, name="Broker"):
     o = broker.order(cl_id=cl)
     broker.order_loeschen(cl)
     o2 = broker.order(cl_id=cl)
-    text = f"Order gesetzt: {o and o.get('state')} · danach: {o2 and o2.get('state')}"
+    text = (f"Konto gesamt {gesamt:,.2f} · Kurs {preis:,.2f}\n"
+            f"Order gesetzt: {o and o.get('state')} · danach: {o2 and o2.get('state')}")
     print(text)
     melder(f"🧪 {name}-Test", text)
 

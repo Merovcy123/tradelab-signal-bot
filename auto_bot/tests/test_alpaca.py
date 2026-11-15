@@ -15,7 +15,7 @@ class FakeAlpaca(Alpaca):
         super().__init__("k", "s", daten=daten)
         self.orders, self.btc, self.cash = {}, 0.0, 10000.0
 
-    def _req(self, m, pfad, body=None, versuche=3, basis=None):
+    def _req(self, m, pfad, body=None, versuche=3, basis=None, auth=True):
         if pfad == "/v2/account": return {"cash": self.cash, "equity": self.cash + self.btc * 100}
         if pfad.startswith("/v2/positions"):
             gesperrt = sum(float(o["qty"]) for o in self.orders.values() if o["side"] == "sell" and o["status"] == "new")
