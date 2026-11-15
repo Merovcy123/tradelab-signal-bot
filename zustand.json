@@ -24,8 +24,8 @@
       "trend": false,
       "status": "kein_trade",
       "start": 1794725100,
-      "gemeldet": false
+      "gemeldet": true
     }
   },
-  "_letzte_5m": 1794718500
+  "_letzte_5m": 1794722100
 }
