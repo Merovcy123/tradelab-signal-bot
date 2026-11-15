@@ -79,3 +79,14 @@ In `einstellungen.json` `"modus": "live"` und `"max_einsatz_usdt"` > 0 setzen, *
 - Backtest ab Jul 2024: ca. 5 Trades/Woche, PF 1.33, max. Rückgang 10.8 R.
 - Test: `python tests/p4_replay.py <ordner_mit_pickles> 2026-06-01 2026-10-31` (Bot-Replay = Backtest ±1 Trade).
 - Der Alpaca-V3-Bot (`bot.py`) ist pausiert; Code und Secrets bleiben für später.
+
+## P4 Demo (aktiv seit 15.11.2026) – `p4_demo.py`
+
+- Longs (BTC, ETH, SOL): echte Orders im **Alpaca-Paper**-Konto (Limit-Kauf, Stop-Limit beim Broker, Ziel + 48 h durch den Bot).
+- Shorts (ETH, ADA): Simulation mit Live-Kursen. Grund: Alpaca kann bei Krypto nicht shorten; Bybit sperrt die USA (403),
+  Binance-Demo sperrt die USA (451), Kraken-Futures-Demo gibt es nicht mehr, OKX-Demo braucht einen EU-Server (kostet).
+- Gemeinsames Demo-Konto `daten_demo/konto.json` (Start 100 Fr., Risiko 3 %), Journal `daten_demo/journal.csv`,
+  Gewinne immer nach OKX-Perpetual-Gebühren (0.02 % Maker / 0.05 % Taker).
+- Vergleichs-Simulation aller 5 Strategien weiter in `daten_p4/`.
+- Telegram: nur Einstieg, Ausstieg, Wochenbericht (So 19:00), Not-Aus (−40 %), Fehler.
+- Tests: `tests/test_demo_long.py`, `tests/test_alpaca.py`, `DEMO=1 tests/p4_replay.py <pickles> VON BIS`.

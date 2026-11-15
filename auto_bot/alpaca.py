@@ -21,8 +21,11 @@ class AlpacaFehler(Exception):
 
 
 class Alpaca:
-    def __init__(self, key, secret, basis="https://paper-api.alpaca.markets", daten=None, zustand=None):
+    def __init__(self, key, secret, basis="https://paper-api.alpaca.markets", daten=None, zustand=None,
+                 symbol=SYMBOL, maker=MAKER, taker=TAKER):
         self.key, self.secret, self.basis = key, secret, basis.rstrip("/").removesuffix("/v2")
+        self.symbol, self.pos = symbol, symbol.replace("/", "")
+        self.maker, self.taker = maker, taker  # Gebühren fürs Journal (z. B. OKX-Sätze)
         self.daten = daten
         self.z = zustand if zustand is not None else {}  # wird vom Bot gesetzt (für Ziel-Prüfung)
 
@@ -52,25 +55,24 @@ class Alpaca:
 
     # ------------------------------------------------------------ Markt / Konto
     def instrument(self):
-        a = self._req("GET", "/v2/assets/" + urllib.parse.quote(SYMBOL, safe=""))
+        a = self._req("GET", "/v2/assets/" + urllib.parse.quote(self.symbol, safe=""))
         return {"minSz": str(a.get("min_order_size") or "0.0001"), "lotSz": str(a.get("min_trade_increment") or "0.000000001"),
                 "tickSz": str(a.get("price_increment") or "1")}
 
     def preis(self):
-        d = self._req("GET", "/v1beta3/crypto/us/latest/trades?symbols=" + urllib.parse.quote(SYMBOL, safe=""),
+        d = self._req("GET", "/v1beta3/crypto/us/latest/trades?symbols=" + urllib.parse.quote(self.symbol, safe=""),
                       basis="https://data.alpaca.markets", auth=False)  # Krypto-Kurse sind öffentlich
-        return float(d["trades"][SYMBOL]["p"])
+        return float(d["trades"][self.symbol]["p"])
 
     def guthaben(self):
         """-> (usd_verfuegbar, btc_verfuegbar, gesamt_usd)"""
         acc = self._req("GET", "/v2/account")
-        pos = self._req("GET", "/v2/positions/" + POS)
+        pos = self._req("GET", "/v2/positions/" + self.pos)
         btc_frei = float(pos.get("qty_available") or 0) if pos else 0.0
         return float(acc.get("cash") or 0), btc_frei, float(acc.get("equity") or 0)
 
     # ------------------------------------------------------------ Normalisierung (OKX-Format für den Bot)
-    @staticmethod
-    def _norm(o, seite):
+    def _norm(self, o, seite):
         if not o:
             return None
         status = {"filled": "filled", "partially_filled": "partially_filled", "canceled": "canceled",
@@ -78,10 +80,10 @@ class Alpaca:
         menge = float(o.get("filled_qty") or 0)
         px = float(o.get("filled_avg_price") or 0)
         if seite == "buy":
-            rate = TAKER if o.get("type") == "market" else MAKER
+            rate = self.taker if o.get("type") == "market" else self.maker
             fee, ccy = -menge * rate, "BTC"
         else:
-            fee, ccy = -menge * px * TAKER, "USDT"
+            fee, ccy = -menge * px * self.taker, "USDT"
         ts = o.get("filled_at") or o.get("updated_at")
         ms = calendar.timegm(time.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S")) * 1000 if ts else int(time.time() * 1000)
         return {"state": status, "accFillSz": str(menge), "avgPx": str(px), "fee": str(fee), "feeCcy": ccy,
@@ -94,11 +96,11 @@ class Alpaca:
 
     # ------------------------------------------------------------ Orders
     def kaufen_limit(self, cl_id, preis, menge, post_only=True):
-        return self._req("POST", "/v2/orders", {"symbol": SYMBOL, "qty": str(menge), "side": "buy", "type": "limit",
+        return self._req("POST", "/v2/orders", {"symbol": self.symbol, "qty": str(menge), "side": "buy", "type": "limit",
                                                 "time_in_force": "gtc", "limit_price": str(preis), "client_order_id": cl_id})
 
     def verkaufen_market(self, cl_id, menge):
-        return self._req("POST", "/v2/orders", {"symbol": SYMBOL, "qty": str(menge), "side": "sell", "type": "market",
+        return self._req("POST", "/v2/orders", {"symbol": self.symbol, "qty": str(menge), "side": "sell", "type": "market",
                                                 "time_in_force": "gtc", "client_order_id": cl_id})
 
     def order(self, cl_id=None, ord_id=None):
@@ -125,7 +127,7 @@ class Alpaca:
         menge = min(float(menge), btc)
         tick = 1.0
         limit = round(stop * (1 - STOP_PUFFER) / tick) * tick
-        o = self._req("POST", "/v2/orders", {"symbol": SYMBOL, "qty": f"{menge:.9f}".rstrip("0").rstrip("."), "side": "sell",
+        o = self._req("POST", "/v2/orders", {"symbol": self.symbol, "qty": f"{menge:.9f}".rstrip("0").rstrip("."), "side": "sell",
                                              "type": "stop_limit", "time_in_force": "gtc", "stop_price": str(stop),
                                              "limit_price": str(limit), "client_order_id": algo_cl_id})
         self.z.setdefault("ziele", {})[algo_cl_id] = {"ziel": ziel, "menge": menge, "seit": int(time.time()), "geprueft": int(time.time())}

@@ -54,8 +54,11 @@ def fmt(x, n=2):
 
 
 class P4Bot:
-    def __init__(self, daten_fuer, melder, ordner, cfg=None, uhr=time.time):
+    def __init__(self, daten_fuer, melder, ordner, cfg=None, uhr=time.time, ausfuehren=None, konto_fn=None, buchung=None):
+        """ausfuehren: Namen der Strategien, deren Trades als "echte" Demo-Trades zählen (Meldung + gemeinsames Konto).
+        None = klassische Simulation mit allen Meldungen."""
         self.daten_fuer, self.m, self.ordner, self.uhr = daten_fuer, melder, ordner, uhr
+        self.ausfuehren, self.konto_fn, self.buchung = ausfuehren, konto_fn, buchung
         self.cfg = dict(STANDARD_CFG); self.cfg.update(cfg or {})
         self.zpfad = os.path.join(ordner, "zustand.json")
         self.jpfad = os.path.join(ordner, "journal.csv")
@@ -80,9 +83,15 @@ class P4Bot:
     def log(self, t):
         print(f"{iso(self.uhr())}  {t}", flush=True)
 
-    def melde(self, titel, text=""):
+    def melde(self, titel, text="", wichtig=False):
+        if self.ausfuehren is not None and not wichtig and not titel.startswith("🚨"):
+            self.log(f"(still) {titel} | {text}".replace("\n", " / "))
+            return
         self.log(f"TELEGRAM {titel} | {text}".replace("\n", " / "))
         self.m(titel, text)
+
+    def _echt(self, name):
+        return self.ausfuehren is not None and name in self.ausfuehren
 
     def offen(self, name=None):
         return [t for t in self.z["trades"] if t["status"] == "offen" and (name is None or t["s"] == name)]
@@ -193,14 +202,21 @@ class P4Bot:
 
     def _eroeffnen(self, p, k):
         sd, e = p["seite"], p["limit"]
-        risiko = self.z["konto"] * self.cfg["risiko_prozent"] / 100
+        basis = self.konto_fn() if (self._echt(p["s"]) and self.konto_fn) else self.z["konto"]
+        risiko = basis * self.cfg["risiko_prozent"] / 100
         self.z["nr"] += 1
         t = dict(nr=self.z["nr"], s=p["s"], sym=p["sym"], seite=sd, ts=k["t"], ab=k["t"] + 300, einstieg=e,
                  stop=e - sd * p["abstand"], ziel=e + sd * self.cfg["ziel_r"] * p["abstand"], abstand=p["abstand"],
-                 risiko=risiko, menge=risiko / p["abstand"], status="offen")
+                 risiko=risiko, risiko_sim=self.z["konto"] * self.cfg["risiko_prozent"] / 100,
+                 menge=risiko / p["abstand"], status="offen")
         self.z["trades"].append(t)
         p["status"] = "gekauft"
-        self.melde(f"{'🟢 LONG' if sd == 1 else '🔴 SHORT'} {p['s']} eröffnet (Sim)",
+        if self._echt(p["s"]):
+            coin = p["sym"].replace("USDT", "")
+            self.melde(f"{'🟢 KAUFEN' if sd == 1 else '🔴 SHORT'} – {coin} (Sim)",
+                       f"Preis: {fmt(e)}\nStop: {fmt(t['stop'])} · Ziel: {fmt(t['ziel'])}\nRisiko: {risiko:.2f} Fr.", wichtig=True)
+        elif self.ausfuehren is None:
+            self.melde(f"{'🟢 LONG' if sd == 1 else '🔴 SHORT'} {p['s']} eröffnet (Sim)",
                    f"Einstieg {fmt(e)} · Stop {fmt(t['stop'])} · Ziel {fmt(t['ziel'])}\n"
                    f"Risiko {fmt(risiko)} ({self.cfg['risiko_prozent']} %) · spätestens {zeit_ch(t['ts'] + self.cfg['max_stunden'] * 3600)} Uhr raus")
         # Einstiegskerze: nur Stop prüfen (konservativ, wie Backtest)
@@ -210,7 +226,7 @@ class P4Bot:
     def _schliessen(self, t, preis, grund, ts):
         r = t["seite"] * (preis - t["einstieg"]) / t["abstand"] - self.cfg["gebuehr_rt"] * t["einstieg"] / t["abstand"]
         gewinn = r * t["risiko"]
-        self.z["konto"] += gewinn
+        self.z["konto"] += r * t.get("risiko_sim", t["risiko"])  # Sim-Konto immer mit eigener Grösse (Vergleich)
         self.z["hoch"] = max(self.z["hoch"], self.z["konto"])
         t.update(status="zu", ausstieg=preis, grund=grund, r=r, gewinn=gewinn, ts_zu=ts)
         neu = not os.path.exists(self.jpfad)
@@ -219,8 +235,17 @@ class P4Bot:
                 f.write(KOPF)
             f.write(f"{t['s']};{'Long' if t['seite'] == 1 else 'Short'};{iso(t['ts'])};{iso(ts)};{t['einstieg']:.6g};"
                     f"{t['stop']:.6g};{t['ziel']:.6g};{preis:.6g};{grund};{r:.3f};{gewinn:.4f};{self.z['konto']:.4f}\n")
+        if self._echt(t["s"]):
+            konto_neu = self.buchung(dict(strategie=t["s"], richtung="Long" if t["seite"] == 1 else "Short", eroeffnet=t["ts"],
+                                          geschlossen=ts, einstieg=t["einstieg"], ausstieg=preis, grund=grund, r=r,
+                                          gewinn=gewinn, quelle="Sim")) if self.buchung else self.z["konto"]
+            coin = t["sym"].replace("USDT", "")
+            kopf = f"✅ GEWINN – {coin}" if gewinn > 0 else f"❌ VERLUST – {coin}"
+            self.melde(f"{kopf}: {gewinn:+.2f} Fr. ({r:+.2f} R)",
+                       f"Grund: {'48 h' if grund == '48h' else grund}\nKonto: {konto_neu:.2f} Fr.", wichtig=True)
         icon = {"Ziel": "✅", "Stop": "❌", "48h": "⏰"}[grund]
-        self.melde(f"{icon} {t['s']} geschlossen: {grund} (Sim)",
+        if self.ausfuehren is None:
+            self.melde(f"{icon} {t['s']} geschlossen: {grund} (Sim)",
                    f"{fmt(t['einstieg'])} → {fmt(preis)} · {r:+.2f} R · {gewinn:+.2f}\nKonto {fmt(self.z['konto'])}")
         grenze = self.z["hoch"] * (1 - self.cfg["rueckgang_stopp_prozent"] / 100)
         if self.z["konto"] < grenze and not self.z.get("halt"):

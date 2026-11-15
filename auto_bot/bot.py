@@ -43,8 +43,10 @@ def fmt(x, n=2):
 
 
 class Bot:
-    def __init__(self, broker, daten, melder, ordner, cfg=None, trocken=False, uhr=time.time):
+    def __init__(self, broker, daten, melder, ordner, cfg=None, trocken=False, uhr=time.time, konto_fn=None, buchung=None):
         self.b, self.d, self.m, self.ordner, self.trocken, self.uhr = broker, daten, melder, ordner, trocken, uhr
+        self.konto_fn = konto_fn      # virtuelles Konto (Fr.) für die Positionsgrösse, sonst Broker-Konto
+        self.buchung = buchung        # Rückruf nach jedem geschlossenen Trade (gemeinsames Konto/Journal)
         self.cfg = dict(STANDARD_CFG)
         self.cfg.update(cfg or {})
         self.zpfad = os.path.join(ordner, "zustand.json")
@@ -52,6 +54,8 @@ class Bot:
         self.lpfad = os.path.join(ordner, "bot.log")
         self.z = self._lade()
         self.inst = None
+        self.pre = self.cfg.get("id_prefix", "v3")
+        os.makedirs(ordner, exist_ok=True)
 
     # ------------------------------------------------------------ Hilfen
     def _lade(self):
@@ -78,7 +82,11 @@ class Bot:
         except OSError:
             pass
 
-    def melde(self, titel, text=""):
+    def melde(self, titel, text="", wichtig=False):
+        """nur_trades=True: nur Ein-/Ausstiege (wichtig=True) und 🚨-Warnungen gehen an Telegram."""
+        if self.cfg.get("nur_trades") and not wichtig and not titel.startswith("🚨"):
+            self.log(f"(still) {titel} | {text}".replace("\n", " / "))
+            return
         self.log(f"TELEGRAM {titel} | {text}".replace("\n", " / "))
         self.m(titel, text)
 
@@ -108,13 +116,15 @@ class Bot:
         if not tage or tage[-1]["t"] != tag:
             return  # Tageskerze noch nicht da
         p = tagesplan(tage, self.cfg)
+        if self.cfg.get("ende_utc_stunde"):
+            p["ende"] = tag + int(self.cfg["ende_utc_stunde"]) * 3600
         self.z["plaene"][str(tag)] = p
         self.log(f"Tagesplan {iso(tag)}: " + (f"Limit {fmt(p['limit'])} Abstand {fmt(p['abstand'])}" if p["trend"]
                                                else "kein Trade (unter SMA)"))
 
     # 2 ----------------------------------------------------------
     def _kerzen_verarbeiten(self):
-        letzte = self.z.get("letzte_5m") or int(self.uhr()) // 300 * 300 - 600
+        letzte = self.z.get("letzte_5m") or int(self.uhr()) // TAG * TAG - 300  # Erststart: ganzen Tag prüfen (verpasst)
         for x in self.d.kerzen_5m(letzte):
             p = self.z["plaene"].get(str(x["t"] // TAG * TAG))
             if p and p["status"] in ("wartet", "order") and x["t"] < p["start"] and x["l"] <= p["limit"]:
@@ -162,9 +172,10 @@ class Bot:
                        f"Offene Trades behalten ihren Stop. Freigabe: 'halt' in zustand.json auf false setzen.")
         # Waisen-Check: BTC im Konto, aber kein offener Trade bekannt -> Alarm (1x pro Tag)
         min_btc = float((self.inst or {}).get("minSz") or 0.0001)
-        offen = any(t["status"] in ("offen", "48h_verkauf") for t in self.z["trades"].values())
+        offen = (any(t["status"] in ("offen", "48h_verkauf") for t in self.z["trades"].values())
+                 or any(p.get("status") == "order" for p in self.z["plaene"].values()))  # Kauf evtl. gerade gefüllt
         heute = int(self.uhr()) // TAG
-        if btc >= min_btc and not offen and self.z.get("waise_tag") != heute:
+        if btc >= min_btc and not offen and self.z.get("waise_tag") != heute and btc * self.b.preis() >= 5:  # Staub ignorieren
             self.z["waise_tag"] = heute
             self.melde("🚨 BTC ohne bekannten Trade", f"Im Konto liegen {btc:.6f} BTC, der Bot kennt keinen offenen Trade.\n"
                                                       "Bitte prüfen (z. B. Zustand verloren). Der Bot verkauft nichts automatisch.")
@@ -190,14 +201,15 @@ class Bot:
         preis_jetzt = self.b.preis()
         limit = runde_preis(p["limit"], self.inst["tickSz"])
         max_e = self.cfg.get("max_einsatz_usdt") or None
-        menge, risiko = menge_berechnen(konto["gesamt"], p["abstand"], self.cfg, self.inst, max_e, limit)
+        basis = self.konto_fn() if self.konto_fn else konto["gesamt"]
+        menge, risiko = menge_berechnen(basis, p["abstand"], self.cfg, self.inst, max_e, limit)
         if menge is None:
             p["status"] = "zu_klein"
             self.melde("⚠️ Konto zu klein", f"Menge unter Minimum {self.inst['minSz']} BTC.")
             return
         if menge * limit > konto["usdt"] * 0.995:
             menge = runde_ab(konto["usdt"] * 0.995 / limit, self.inst["lotSz"])
-        cl = "v3" + datetime.fromtimestamp(tag, timezone.utc).strftime("%Y%m%d") + "buy"
+        cl = self.pre + datetime.fromtimestamp(tag, timezone.utc).strftime("%Y%m%d") + "buy"
         post_only = preis_jetzt > limit
         p.update(cl_buy=cl, menge=menge, risiko=risiko, limit_order=limit)
         if self.trocken:
@@ -255,12 +267,16 @@ class Bot:
         t = dict(status="offen", ts=int(o.get("fillTime") or o.get("uTime") or self.uhr() * 1000) // 1000,
                  einstieg=einstieg, menge=netto, menge_brutto=gefuellt, stop=stop, ziel=ziel,
                  risiko=p["abstand"] * netto, gebuehr_kauf_usdt=abs(gebuehr) * (einstieg if o.get("feeCcy") == "BTC" else 1),
-                 kauf_id=o.get("ordId"), algo_cl="v3" + datetime.fromtimestamp(p["tag"], timezone.utc).strftime("%Y%m%d") + "oco")
+                 kauf_id=o.get("ordId"), algo_cl=self.pre + datetime.fromtimestamp(p["tag"], timezone.utc).strftime("%Y%m%d") + "oco")
         self.z["trades"][tag] = t
         p["status"] = "gekauft"
         self._oco_sicherstellen(t)
-        self.melde("🟢 GEKAUFT BTC", f"Einstieg {fmt(einstieg)} · Menge {fmt(netto, 5)} BTC\nStop {fmt(stop)} · Ziel {fmt(ziel)} "
-                                     f"(Stop + Ziel bei {self.cfg.get('broker_name', 'Broker')} ✅)\nSpätester Verkauf: {zeit_ch(t['ts'] + self.cfg['max_stunden'] * 3600)} Uhr")
+        if self.cfg.get("nur_trades"):
+            self.melde(f"🟢 KAUFEN – {self.cfg.get('coin', 'BTC')} (Demo)",
+                       f"Preis: {fmt(einstieg)}\nStop: {fmt(stop)} · Ziel: {fmt(ziel)}\nRisiko: {t['risiko']:.2f} Fr.", wichtig=True)
+        else:
+            self.melde("🟢 GEKAUFT BTC", f"Einstieg {fmt(einstieg)} · Menge {fmt(netto, 5)} BTC\nStop {fmt(stop)} · Ziel {fmt(ziel)} "
+                                         f"(Stop + Ziel bei {self.cfg.get('broker_name', 'Broker')} ✅)\nSpätester Verkauf: {zeit_ch(t['ts'] + self.cfg['max_stunden'] * 3600)} Uhr")
 
     def _oco_sicherstellen(self, t):
         o = self.b.oco(t["algo_cl"])
@@ -301,7 +317,7 @@ class Bot:
                 if o2 and o2.get("state") == "effective":
                     continue  # kurz vorher ausgelöst -> nächster Durchlauf schliesst
                 t["status"] = "48h_verkauf"
-                t["cl_48h"] = "v3" + datetime.fromtimestamp(int(tag), timezone.utc).strftime("%Y%m%d") + "z48"
+                t["cl_48h"] = self.pre + datetime.fromtimestamp(int(tag), timezone.utc).strftime("%Y%m%d") + "z48"
                 _, btc, _ = self.b.guthaben()
                 self.b.verkaufen_market(t["cl_48h"], runde_ab(min(t["menge"], btc), self.inst["lotSz"]))
                 v = self.b.order(cl_id=t["cl_48h"])
@@ -323,6 +339,17 @@ class Bot:
             f.write(f"{iso(t['ts'])};{iso(t['ts_zu'])};{t['einstieg']:.1f};{t['stop']:.1f};{t['ziel']:.1f};{preis:.1f};"
                     f"{grund};{menge:.8f};{gebuehr + t['gebuehr_kauf_usdt']:.4f};{gewinn:.4f};{r:.3f};{gesamt:.2f};"
                     f"{t.get('kauf_id')};{v.get('ordId')}\n")
+        if self.buchung:
+            konto_neu = self.buchung(dict(strategie=self.cfg.get("name", "BTC Long"), richtung="Long", eroeffnet=t["ts"],
+                                          geschlossen=t["ts_zu"], einstieg=t["einstieg"], ausstieg=preis, grund=grund,
+                                          r=r, gewinn=gewinn, quelle="Demo"))
+        else:
+            konto_neu = gesamt
+        if self.cfg.get("nur_trades"):
+            kopf = f"✅ GEWINN – {self.cfg.get('coin', 'BTC')}" if gewinn > 0 else f"❌ VERLUST – {self.cfg.get('coin', 'BTC')}"
+            self.melde(f"{kopf}: {gewinn:+.2f} Fr. ({r:+.2f} R)",
+                       f"Grund: {'48 h' if grund == '48h' else grund}\nKonto: {konto_neu:.2f} Fr.", wichtig=True)
+            return
         z = {"Ziel": "✅", "Stop": "❌", "48h": "⏰"}[grund]
         self.melde(f"{z} BTC geschlossen: {grund}", f"Einstieg {fmt(t['einstieg'])} → Ausstieg {fmt(preis)}\n"
                                                     f"Ergebnis {gewinn:+.2f} USDT ({r:+.2f} R) · Konto {fmt(gesamt)} USDT")

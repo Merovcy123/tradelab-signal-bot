@@ -34,15 +34,24 @@ class Fake:
 
 fakes = {s: Fake(s) for s in NAMEN}
 tmp = tempfile.mkdtemp()
-bot = p4_bot.P4Bot(lambda s: fakes[s], lambda *a: None, tmp, uhr=lambda: uhr[0])
+meldungen = []
+kw = {}
+if os.environ.get("DEMO"):
+    from p4_demo import Konto, SHORTS
+    konto = Konto(os.path.join(tmp, "demo"))
+    kw = dict(ausfuehren=SHORTS, konto_fn=konto.wert, buchung=konto.buchen)
+bot = p4_bot.P4Bot(lambda s: fakes[s], lambda t, x="": meldungen.append(t + " | " + x.replace("\n", " / ")), tmp, uhr=lambda: uhr[0], **kw)
 bot.log = lambda t: None
 t0 = int((von - pd.Timestamp(0)).total_seconds()); t1 = int((bis - pd.Timestamp(0)).total_seconds())
 for x in range(t0, t1, 600):
     uhr[0] = x + 60
     if os.environ.get("NEUSTART"):
-        bot = p4_bot.P4Bot(lambda s: fakes[s], lambda *a: None, tmp, uhr=lambda: uhr[0]); bot.log = lambda t: None
+        bot = p4_bot.P4Bot(lambda s: fakes[s], lambda t, x="": meldungen.append(t), tmp, uhr=lambda: uhr[0], **kw); bot.log = lambda t: None
     bot.tick()
 j = pd.read_csv(os.path.join(tmp, "journal.csv"), sep=";")
+if os.environ.get("DEMO"):
+    print(len(meldungen), "Meldungen, Beispiele:"); [print("  ", m) for m in meldungen[:4]]
+    print("Demo-Konto:", round(konto.wert(), 2))
 print(f"Bot-Replay: {len(j)} Trades · Summe {j.r.sum():+.1f} R · Konto {bot.z['konto']:.2f}")
 print(j.groupby("strategie").r.agg(["count", "sum"]).round(2).to_string())
 j.to_csv(os.path.join(tmp, "j.csv"), index=False); print("journal:", tmp)

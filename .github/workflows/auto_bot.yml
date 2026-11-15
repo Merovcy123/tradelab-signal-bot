@@ -1,4 +1,4 @@
-name: Auto-Bot (P4 Simulation)
+name: Auto-Bot (P4 Demo)
 
 on:
   schedule:
@@ -31,6 +31,8 @@ jobs:
         env:
           BROKER: alpaca
           TRADELAB_DATEN: auto_bot/daten
+          TRADELAB_P4_DATEN: auto_bot/daten_p4
+          TRADELAB_DEMO_DATEN: auto_bot/daten_demo
           ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
@@ -41,15 +43,15 @@ jobs:
           if [ "${{ inputs.test_order }}" = "true" ]; then
             python auto_bot/bot.py --test-order
           else
-            # P4: 5 Strategien als Simulation mit Live-Kursen (Alpaca-V3-Bot pausiert, Code bleibt)
-            python auto_bot/p4_bot.py
+            # P4 Demo: Longs bei Alpaca Paper, Shorts als Simulation, alle 5 zusätzlich als Vergleichs-Simulation
+            python auto_bot/p4_demo.py
           fi
       - name: Zustand speichern
         if: always()
         run: |
           git config user.name "tradelab-auto-bot"
           git config user.email "actions@github.com"
-          for f in auto_bot/daten/zustand.json auto_bot/daten/journal.csv auto_bot/daten_p4/zustand.json auto_bot/daten_p4/journal.csv; do [ -f "$f" ] && git add "$f"; done
+          for d in auto_bot/daten auto_bot/daten_p4 auto_bot/daten_demo; do [ -d "$d" ] && git add -A "$d"; done
           git diff --cached --quiet && exit 0
           git commit -m "P4-Bot Zustand"
           for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
