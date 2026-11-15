@@ -1,0 +1,24 @@
+{
+ "plaene": {
+  "1794700800": {
+   "tag": 1794700800,
+   "eroeffnung": 70.28,
+   "gestern_schluss": 70.28,
+   "sma": 90.33099999999999,
+   "atr": 4.878571428571429,
+   "trend": false,
+   "start": 1794725100,
+   "nachricht": 1794722400,
+   "ende": 1794772800,
+   "status": "kein_trade",
+   "gemeldet": true
+  }
+ },
+ "trades": {},
+ "letzte_5m": 1794759000,
+ "hoch": 100000.0,
+ "halt": false,
+ "broker": {},
+ "konto": 100000.0,
+ "letzter_lauf": 1794759540
+}
