@@ -1,0 +1,55 @@
+name: Auto-Bot (Alpaca Paper)
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # Reserve: GitHub-Zeitplan (oft verspätet)
+  # Hauptzeitgeber: cron-job.org startet diesen Workflow alle 10 Minuten
+  workflow_dispatch:
+    inputs:
+      test_order:
+        description: "Nur Test-Order (Kauf weit unter Markt setzen + löschen)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-bot
+  cancel-in-progress: false
+
+jobs:
+  lauf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bot-Durchlauf
+        env:
+          BROKER: alpaca
+          TRADELAB_DATEN: auto_bot/daten
+          ALPACA_KEY_ID: ${{ secrets.ALPACA_KEY_ID }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          mkdir -p auto_bot/daten
+          if [ "${{ inputs.test_order }}" = "true" ]; then
+            python auto_bot/bot.py --test-order
+          else
+            python auto_bot/bot.py --einmal
+          fi
+      - name: Zustand speichern
+        if: always()
+        run: |
+          git config user.name "tradelab-auto-bot"
+          git config user.email "actions@github.com"
+          for f in auto_bot/daten/zustand.json auto_bot/daten/journal.csv; do [ -f "$f" ] && git add "$f"; done
+          git diff --cached --quiet && exit 0
+          git commit -m "Auto-Bot Zustand"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1

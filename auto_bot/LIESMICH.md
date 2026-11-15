@@ -58,3 +58,13 @@ bash ~/tradelab-signal-bot/auto_bot/update.sh       # neuen Code einspielen
 
 ## Echtes Geld (später, nur nach Bestätigung)
 In `einstellungen.json` `"modus": "live"` und `"max_einsatz_usdt"` > 0 setzen, **und** in `~/.tradelab.env` `LIVE_BESTAETIGT=JA` eintragen. Dazu neue **Live**-API-Schlüssel ohne Abhebe-Recht, mit Server-IP.
+
+## Demo über Alpaca Paper (läuft auf GitHub, 0 Fr.)
+
+- Workflow `.github/workflows/auto_bot.yml`, gestartet alle 10 Min. von cron-job.org (Reserve: GitHub-Zeitplan).
+- Secrets: `ALPACA_KEY_ID`, `ALPACA_SECRET_KEY`, `ALPACA_BASE_URL` (paper-api), `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`.
+- Nur Paper erlaubt: andere URL → Bot bricht ab. Live-Geld später nur über OKX.
+- Alpaca hat kein OCO für Krypto: Stop liegt als stop_limit beim Broker, Ziel prüft der Bot alle 10 Min.
+- Journal rechnet immer echte Alpaca-Gebühren (0,15 % Maker / 0,25 % Taker) ein.
+- Test: Actions → "Auto-Bot (Alpaca Paper)" → Run workflow → Haken "Nur Test-Order".
+- Zustand + Journal: `auto_bot/daten/` (wird nach jedem Lauf committet).

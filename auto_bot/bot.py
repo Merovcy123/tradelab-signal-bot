@@ -233,7 +233,7 @@ class Bot:
                     self.log(f"Plan {iso(p['tag'])}: Limit nicht erreicht, Order gelöscht")
             elif o["state"] == "canceled" and gefuellt == 0:
                 p["status"] = "abgelehnt"
-                self.melde("⚠️ Kauf-Order von OKX abgelehnt/gelöscht", "Heute kein Trade.")
+                self.melde(f"⚠️ Kauf-Order von {self.cfg.get('broker_name', 'Broker')} abgelehnt/gelöscht", "Heute kein Trade.")
 
     def _trade_eroeffnen(self, p, o):
         gefuellt = float(o["accFillSz"])
@@ -252,7 +252,7 @@ class Bot:
         p["status"] = "gekauft"
         self._oco_sicherstellen(t)
         self.melde("🟢 GEKAUFT BTC", f"Einstieg {fmt(einstieg)} · Menge {fmt(netto, 5)} BTC\nStop {fmt(stop)} · Ziel {fmt(ziel)} "
-                                     f"(OCO bei OKX ✅)\nSpätester Verkauf: {zeit_ch(t['ts'] + self.cfg['max_stunden'] * 3600)} Uhr")
+                                     f"(Stop + Ziel bei {self.cfg.get('broker_name', 'Broker')} ✅)\nSpätester Verkauf: {zeit_ch(t['ts'] + self.cfg['max_stunden'] * 3600)} Uhr")
 
     def _oco_sicherstellen(self, t):
         o = self.b.oco(t["algo_cl"])
@@ -356,7 +356,7 @@ class Bot:
 
 # ---------------------------------------------------------------- Start (Server)
 def lade_env(pfad):
-    werte = {}
+    werte = {k: v for k, v in os.environ.items() if k.startswith(("OKX_", "ALPACA_", "TELEGRAM_", "LIVE_", "BROKER"))}
     if os.path.exists(pfad):
         with open(pfad, encoding="utf-8") as f:
             for z in f:
@@ -400,47 +400,69 @@ def main():
             print("Live-Modus verweigert: LIVE_BESTAETIGT=JA in .env und max_einsatz_usdt > 0 nötig.")
             sys.exit(1)
     melder = telegram_melder(env.get("TELEGRAM_TOKEN"), env.get("TELEGRAM_CHAT_ID"))
-    broker = Okx(env.get("OKX_API_KEY", ""), env.get("OKX_SECRET", ""), env.get("OKX_PASSPHRASE", ""), demo=(modus != "live"))
     daten = Daten(melden=lambda t: melder(t))
     trocken = "--trocken" in sys.argv
-    if trocken and not env.get("OKX_API_KEY"):
-        class OhneKonto(Okx):  # Trockenlauf ohne Schlüssel: nur öffentliche Daten, Spielkonto 5000 USDT
-            def guthaben(self):
-                return 5000.0, 0.0, 5000.0
-        broker = OhneKonto("", "", "", demo=True)
+    broker_name = env.get("BROKER", cfg.get("broker", "okx"))
+    if broker_name == "alpaca":
+        from alpaca import Alpaca
+        if modus == "live":
+            print("Alpaca live ist nicht vorgesehen (Gebühren zu hoch). Abbruch.")
+            sys.exit(1)
+        basis = (env.get("ALPACA_BASE_URL") or "https://paper-api.alpaca.markets").strip()
+        if "paper-api." not in basis:
+            print("Nur Alpaca PAPER erlaubt (ALPACA_BASE_URL muss paper-api sein). Abbruch.")
+            sys.exit(1)
+        broker = Alpaca(env.get("ALPACA_KEY_ID", "").strip(), env.get("ALPACA_SECRET_KEY", "").strip(), basis, daten=daten)
+        cfg["strategie"] = "V3 Rücksetzer Long 2R (Alpaca Paper)"
+        cfg["broker_name"] = "Alpaca"
+    else:
+        cfg["broker_name"] = "OKX"
+        broker = Okx(env.get("OKX_API_KEY", ""), env.get("OKX_SECRET", ""), env.get("OKX_PASSPHRASE", ""), demo=(modus != "live"))
+        if trocken and not env.get("OKX_API_KEY"):
+            class OhneKonto(Okx):  # Trockenlauf ohne Schlüssel: nur öffentliche Daten, Spielkonto 5000 USDT
+                def guthaben(self):
+                    return 5000.0, 0.0, 5000.0
+            broker = OhneKonto("", "", "", demo=True)
     bot = Bot(broker, daten, melder, ordner, cfg, trocken=trocken)
+    if broker_name == "alpaca":
+        broker.z = bot.z.setdefault("broker", {})
     if "--test-order" in sys.argv:
-        return test_order(broker, melder)
-    bot.log(f"Bot gestartet · Modus {modus}{' · TROCKEN' if trocken else ''}")
-    melder("🤖 TradeLab Auto-Bot gestartet", f"Modus: {modus}{' (trocken)' if trocken else ''}")
-    fehler_in_folge = 0
+        return test_order(broker, melder, cfg.get("broker_name", "Broker"))
+    bot.log(f"Bot gestartet · {broker_name} · Modus {modus}{' · TROCKEN' if trocken else ''}")
+    if "--einmal" not in sys.argv:
+        melder("🤖 TradeLab Auto-Bot gestartet", f"{broker_name} · Modus: {modus}{' (trocken)' if trocken else ''}")
     while True:
         try:
             bot.tick()
-            fehler_in_folge = 0
+            bot.z["fehler_in_folge"] = 0
         except Exception as e:
-            fehler_in_folge += 1
+            bot.z["fehler_in_folge"] = bot.z.get("fehler_in_folge", 0) + 1
+            n = bot.z["fehler_in_folge"]
             bot.log(f"FEHLER: {e}\n{traceback.format_exc()}")
-            if fehler_in_folge in (3, 30, 300):
-                melder("🚨 Bot-Fehler", f"{fehler_in_folge}x hintereinander: {str(e)[:300]}")
+            if n in (3, 30, 300):
+                melder("🚨 Bot-Fehler", f"{n}x hintereinander: {str(e)[:300]}")
+            try:
+                bot.speichern()
+            except Exception:
+                pass
         if "--einmal" in sys.argv:
             break
         time.sleep(cfg["pruefen_sekunden"])
 
-
-def test_order(broker, melder):
+def test_order(broker, melder, name="Broker"):
     """Demo-Test: Limit-Kauf weit unter Markt setzen und löschen."""
     preis = broker.preis()
     inst = broker.instrument()
     px = runde_preis(preis * 0.5, inst["tickSz"])
     cl = "v3test" + str(int(time.time()))
-    broker.kaufen_limit(cl, px, float(inst["minSz"]) * 10, post_only=True)
+    menge = max(float(inst["minSz"]) * 10, 0.0005)
+    broker.kaufen_limit(cl, px, menge, post_only=True)
     o = broker.order(cl_id=cl)
     broker.order_loeschen(cl)
     o2 = broker.order(cl_id=cl)
     text = f"Order gesetzt: {o and o.get('state')} · danach: {o2 and o2.get('state')}"
     print(text)
-    melder("🧪 OKX-Test", text)
+    melder(f"🧪 {name}-Test", text)
 
 
 if __name__ == "__main__":

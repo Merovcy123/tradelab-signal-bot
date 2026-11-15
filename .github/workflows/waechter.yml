@@ -1,9 +1,7 @@
 name: Signal-Waechter
 
 on:
-  schedule:
-    - cron: "37 * * * *"   # Reserve: GitHub-Zeitplan (oft verspätet)
-  # Hauptzeitgeber: cron-job.org startet den Bot jede Stunde um xx:02 Uhr (CH) -> Tagesplan um 07:02
+  # Abgelöst durch auto_bot.yml (sendet den Tagesplan selbst). Nur noch manuell startbar.
   workflow_dispatch:       # manuell starten (Button "Run workflow")
 
 permissions:
