@@ -13,6 +13,7 @@ class FakeDaten:
 class FakeAlpaca(Alpaca):
     def __init__(self, daten):
         super().__init__("k", "s", daten=daten)
+        self.preis = lambda: 100.0
         self.orders, self.btc, self.cash = {}, 0.0, 10000.0
 
     def _req(self, m, pfad, body=None, versuche=3, basis=None, auth=True):
@@ -66,5 +67,15 @@ def test_loeschen():
     print("OK test_loeschen")
 
 
+def test_kurssturz():
+    d = FakeDaten(); a = FakeAlpaca(d); a.z = {}; a.btc = 0.01
+    a.preis = lambda: 80.0          # weit unter Stop-Limit (90*0.99)
+    a.oco_setzen("v3oco3", 0.01, 90, 105)
+    r = a.oco("v3oco3"); assert r["state"] == "effective" and r["actualSide"] == "sl"
+    assert a.order(ord_id=r["ordId"])["state"] == "filled" and abs(a.btc) < 1e-12
+    assert a.oco("v3oco3")["ordId"] == r["ordId"]   # idempotent
+    print("OK test_kurssturz")
+
+
 if __name__ == "__main__":
-    test_ablauf_ziel(); test_ablauf_stop(); test_loeschen()
+    test_ablauf_ziel(); test_ablauf_stop(); test_loeschen(); test_kurssturz()

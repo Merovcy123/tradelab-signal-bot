@@ -141,8 +141,14 @@ class Alpaca:
             return {"state": "effective", "actualSide": "sl", "ordId": o["id"], "algoId": o["id"]}
         if info.get("tp_order"):  # Ziel wurde schon ausgelöst
             return {"state": "effective", "actualSide": "tp", "ordId": info["tp_order"], "algoId": o["id"]}
+        if info.get("sl_order"):  # Notverkauf wurde schon ausgelöst
+            return {"state": "effective", "actualSide": "sl", "ordId": info["sl_order"], "algoId": o["id"]}
         if o["status"] in ("canceled", "expired", "rejected"):
             return {"state": "canceled", "algoId": o["id"]}
+        # Schutz bei Kurssturz: Stop ausgelöst, aber Limit nicht gefüllt -> sofort Market verkaufen
+        if o["status"] in ("new", "accepted", "partially_filled") and o.get("limit_price"):
+            if self.preis() < float(o["limit_price"]):
+                return self._notverkauf(o, algo_cl_id, info)
         # Ziel erreicht? 5-Min-Hochs seit letzter Prüfung (wie im Backtest)
         if info and self.daten:
             hoch = max([x["h"] for x in self.daten.kerzen_5m(info["geprueft"] - 300)] + [0])
@@ -162,6 +168,25 @@ class Alpaca:
                 time.sleep(2)
                 return {"state": "effective", "actualSide": "tp", "ordId": v["id"], "algoId": o["id"]}
         return {"state": "live", "algoId": o["id"]}
+
+    def _notverkauf(self, o, algo_cl_id, info):
+        try:
+            self._req("DELETE", f"/v2/orders/{o['id']}")
+        except AlpacaFehler as e:
+            if "422" not in str(e):
+                raise
+        for _ in range(5):
+            o2 = self._roh(cl_id=algo_cl_id)
+            if o2["status"] == "filled":
+                return {"state": "effective", "actualSide": "sl", "ordId": o2["id"], "algoId": o2["id"]}
+            if o2["status"] == "canceled":
+                break
+            time.sleep(1)
+        _, btc, _ = self.guthaben()
+        v = self.verkaufen_market(algo_cl_id + "sl", min(info.get("menge", btc), btc))
+        info["sl_order"] = v["id"]
+        time.sleep(2)
+        return {"state": "effective", "actualSide": "sl", "ordId": v["id"], "algoId": o["id"]}
 
     def oco_loeschen(self, algo_id):
         try:

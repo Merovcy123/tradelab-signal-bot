@@ -160,6 +160,14 @@ class Bot:
             self.melde("🚨 NOT-AUS: 3 % unter Höchststand",
                        f"Konto {fmt(gesamt)} USDT, Höchststand {fmt(self.z['hoch'])}. Keine neuen Trades mehr. "
                        f"Offene Trades behalten ihren Stop. Freigabe: 'halt' in zustand.json auf false setzen.")
+        # Waisen-Check: BTC im Konto, aber kein offener Trade bekannt -> Alarm (1x pro Tag)
+        min_btc = float((self.inst or {}).get("minSz") or 0.0001)
+        offen = any(t["status"] in ("offen", "48h_verkauf") for t in self.z["trades"].values())
+        heute = int(self.uhr()) // TAG
+        if btc >= min_btc and not offen and self.z.get("waise_tag") != heute:
+            self.z["waise_tag"] = heute
+            self.melde("🚨 BTC ohne bekannten Trade", f"Im Konto liegen {btc:.6f} BTC, der Bot kennt keinen offenen Trade.\n"
+                                                      "Bitte prüfen (z. B. Zustand verloren). Der Bot verkauft nichts automatisch.")
         return dict(usdt=usdt, btc=btc, gesamt=gesamt)
 
     def _offen_anzahl(self):
