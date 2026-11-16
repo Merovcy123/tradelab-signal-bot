@@ -22,7 +22,9 @@ concurrency:
 jobs:
   lauf:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Notbremse fuer den ganzen Job; der Bot-Schritt hat sein eigenes, kuerzeres Limit,
+    # damit der Zustand auch nach einem haengenden Durchlauf noch gespeichert wird.
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +60,7 @@ jobs:
 
       - name: Bot-Durchlauf
         if: steps.alter.outputs.frisch == 'true'
+        timeout-minutes: 8
         env:
           BROKER: alpaca
           TRADELAB_DATEN: auto_bot/daten

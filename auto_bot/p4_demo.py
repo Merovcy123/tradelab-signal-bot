@@ -78,10 +78,17 @@ def wochenbericht(konto, melder, jetzt):
         with open(konto.jpfad, encoding="utf-8") as f:
             for z in f.readlines()[1:]:
                 s = z.strip().split(";")
-                if len(s) > 9 and datetime.strptime(s[4], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp() >= seit:
-                    rows.append(float(s[9]))
+                if len(s) <= 9:
+                    continue
+                try:  # eine unvollständige oder kaputte Zeile darf den Bericht nicht stoppen
+                    geschlossen = datetime.strptime(s[4], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp()
+                    gewinn = float(s[9])
+                except ValueError:
+                    continue
+                if geschlossen >= seit:
+                    rows.append(gewinn)
     gew = sum(1 for x in rows if x > 0)
-    start = konto.z["start"]
+    start = konto.z.get("start") or 100.0
     melder("📊 Wochenbericht (Demo)",
            f"Trades: {len(rows)} · Gewinner: {gew} · Verlierer: {len(rows) - gew}\n"
            f"Woche: {sum(rows):+.2f} Fr. (nach OKX-Gebühren)\n"
@@ -156,7 +163,11 @@ def main():
     if konto.z.get("halt") and not halt_vorher:
         melder("🚨 NOT-AUS (Demo)", f"Konto {konto.wert():.2f} Fr. ist über {konto.rueckgang:.0f} % unter dem Höchststand "
                                    f"{konto.z['hoch']:.2f} Fr. Keine neuen Trades mehr. Offene Trades behalten ihren Stop.")
-    wochenbericht(konto, melder, time.time())
+    try:  # der Wochenbericht darf den Lauf nie rot machen
+        wochenbericht(konto, melder, time.time())
+    except Exception as e:
+        fehler.append(f"Wochenbericht: {e}")
+        print(traceback.format_exc(), flush=True)
     if fehler:
         konto.z["fehler_in_folge"] = konto.z.get("fehler_in_folge", 0) + 1
         print("FEHLER: " + " | ".join(fehler), flush=True)
