@@ -24,10 +24,30 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Genug Historie, damit der Zustands-Push ein Rennen zweier Läufe erkennen kann
+          fetch-depth: 50
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      # Wartet ein Lauf lange auf einen freien Runner, sind seine Kurse und sein
+      # Zustand veraltet. Dann lieber überspringen als mit alten Daten handeln.
+      - name: Aktualität prüfen
+        id: alter
+        run: |
+          start=$(date -u -d "${{ github.run_started_at }}" +%s)
+          alter=$(( $(date -u +%s) - start ))
+          echo "Lauf wurde vor ${alter}s ausgelöst."
+          if [ "$alter" -gt 300 ]; then
+            echo "Älter als 5 Minuten (Runner-Warteschlange) – Durchlauf wird übersprungen."
+            echo "frisch=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "frisch=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Bot-Durchlauf
+        if: steps.alter.outputs.frisch == 'true'
         env:
           BROKER: alpaca
           TRADELAB_DATEN: auto_bot/daten
@@ -46,13 +66,46 @@ jobs:
             # P4 Demo: Longs bei Alpaca Paper, Shorts als Simulation, alle 5 zusätzlich als Vergleichs-Simulation
             python auto_bot/p4_demo.py
           fi
+
       - name: Zustand speichern
-        if: always()
+        if: always() && steps.alter.outputs.frisch == 'true'
         run: |
+          ZD="auto_bot/daten auto_bot/daten_p4 auto_bot/daten_demo"
           git config user.name "tradelab-auto-bot"
           git config user.email "actions@github.com"
-          for d in auto_bot/daten auto_bot/daten_p4 auto_bot/daten_demo; do [ -d "$d" ] && git add -A "$d"; done
-          git diff --cached --quiet && exit 0
-          git commit -m "P4-Bot Zustand"
-          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          for d in $ZD; do [ -d "$d" ] && git add -A "$d"; done
+          if git diff --cached --quiet; then
+            echo "Kein geänderter Zustand – nichts zu speichern."
+            exit 0
+          fi
+          git commit -q -m "P4-Bot Zustand"
+
+          for i in 1 2 3 4 5; do
+            git fetch -q origin main
+            fern=$(git rev-parse origin/main)
+
+            if [ "$fern" = "$GITHUB_SHA" ]; then
+              # Niemand war schneller: direkt pushen
+              if git push -q origin HEAD:main; then exit 0; fi
+
+            elif git cat-file -e "$GITHUB_SHA^{commit}" 2>/dev/null \
+                 && git diff --quiet "$GITHUB_SHA" "$fern" -- $ZD; then
+              # Fremder Commit, aber ohne Zustandsdateien: sauber daraufsetzen
+              if git rebase -q "$fern"; then
+                if git push -q origin HEAD:main; then exit 0; fi
+              else
+                git rebase --abort >/dev/null 2>&1 || true
+              fi
+
+            else
+              # Ein neuerer Lauf hat den Zustand schon fortgeschrieben.
+              # Unser Zustand ist damit veraltet und wird verworfen (kein Fehler).
+              echo "Neuerer Lauf hat den Zustand bereits geschrieben – eigener, älterer Zustand wird verworfen."
+              exit 0
+            fi
+
+            sleep $(( 5 * i ))
+          done
+
+          echo "::error::Zustand konnte nach 5 Versuchen nicht gepusht werden."
           exit 1
