@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: auto-bot
@@ -35,10 +36,19 @@ jobs:
       # Zustand veraltet. Dann lieber überspringen als mit alten Daten handeln.
       - name: Aktualität prüfen
         id: alter
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          start=$(date -u -d "${{ github.run_started_at }}" +%s)
+          # github.run_started_at ist im Kontext leer – Startzeit über die API holen.
+          start_iso=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"                         --jq '.run_started_at' 2>/dev/null || true)
+          start=$(date -u -d "$start_iso" +%s 2>/dev/null || true)
+          if [ -z "$start_iso" ] || [ -z "$start" ]; then
+            echo "Startzeit nicht ermittelbar – Lauf wird normal ausgeführt."
+            echo "frisch=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           alter=$(( $(date -u +%s) - start ))
-          echo "Lauf wurde vor ${alter}s ausgelöst."
+          echo "Lauf wurde vor ${alter}s ausgelöst (${start_iso})."
           if [ "$alter" -gt 300 ]; then
             echo "Älter als 5 Minuten (Runner-Warteschlange) – Durchlauf wird übersprungen."
             echo "frisch=false" >> "$GITHUB_OUTPUT"
