@@ -160,7 +160,8 @@ class P4Bot:
                 zeilen.append(f"{pfeil} {p['s']}: Limit {fmt(p['limit'])} · Stop {fmt(stop)} · Ziel {fmt(ziel)}")
         self.melde(f"📅 P4 Tagesplan {zeit_ch(tag, '%d.%m.%Y')} (Simulation)",
                    "\n".join(zeilen) + f"\nOrders aktiv {self.cfg['start_ch']}–{zeit_ch(tag + self.cfg['ende_utc_stunde'] * 3600, '%H:%M')} Uhr"
-                   f"\nKonto {fmt(self.z['konto'])} · offen: {len(self.offen())}")
+                   f"\nKonto {fmt(self.z['konto'])} · offen: {len(self.offen())}",
+                   wichtig=True)  # 1 Nachricht pro Tag, auch wenn kein Trade
 
     # ------------------------------------------------------------ Kerzen-Logik (wie Backtest)
     def _kerze(self, sym, k):
