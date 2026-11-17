@@ -142,18 +142,88 @@
    "start": 1794811500,
    "ende": 1794859200,
    "status": "kein_trade"
+  },
+  "BTC Long|1794873600": {
+   "s": "BTC Long",
+   "sym": "BTCUSDT",
+   "seite": 1,
+   "tag": 1794873600,
+   "trend": false,
+   "sma": 79451.9868,
+   "schluss": 64882.87,
+   "limit": 63982.86092857143,
+   "abstand": 2400.050857142857,
+   "start": 1794897900,
+   "ende": 1794945600,
+   "status": "kein_trade"
+  },
+  "ETH Long|1794873600": {
+   "s": "ETH Long",
+   "sym": "ETHUSDT",
+   "seite": 1,
+   "tag": 1794873600,
+   "trend": false,
+   "sma": 2363.045,
+   "schluss": 1820.67,
+   "limit": 1784.5520714285715,
+   "abstand": 96.34114285714287,
+   "start": 1794897900,
+   "ende": 1794945600,
+   "status": "kein_trade"
+  },
+  "ETH Short|1794873600": {
+   "s": "ETH Short",
+   "sym": "ETHUSDT",
+   "seite": -1,
+   "tag": 1794873600,
+   "trend": true,
+   "sma": 2140.301,
+   "schluss": 1820.67,
+   "limit": 1856.8079285714286,
+   "abstand": 96.34114285714287,
+   "start": 1794897900,
+   "ende": 1794945600,
+   "status": "wartet"
+  },
+  "ADA Short|1794873600": {
+   "s": "ADA Short",
+   "sym": "ADAUSDT",
+   "seite": -1,
+   "tag": 1794873600,
+   "trend": true,
+   "sma": 0.180045,
+   "schluss": 0.1532,
+   "limit": 0.15679357142857142,
+   "abstand": 0.009582857142857145,
+   "start": 1794897900,
+   "ende": 1794945600,
+   "status": "wartet"
+  },
+  "SOL Long|1794873600": {
+   "s": "SOL Long",
+   "sym": "SOLUSDT",
+   "seite": 1,
+   "tag": 1794873600,
+   "trend": false,
+   "sma": 87.43350000000001,
+   "schluss": 71.58,
+   "limit": 70.09671428571428,
+   "abstand": 3.955428571428572,
+   "start": 1794897900,
+   "ende": 1794945600,
+   "status": "kein_trade"
   }
  },
  "trades": [],
  "letzte_5m": {
-  "ADAUSDT": 1794872700,
-  "BTCUSDT": 1794872700,
-  "ETHUSDT": 1794872700,
-  "SOLUSDT": 1794872700
+  "ADAUSDT": 1794873300,
+  "BTCUSDT": 1794873300,
+  "ETHUSDT": 1794873300,
+  "SOLUSDT": 1794873300
  },
  "nr": 0,
  "gemeldet_tag": 1794787200,
- "letzter_lauf": 1794873042,
+ "letzter_lauf": 1794873678,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W46"
 }
