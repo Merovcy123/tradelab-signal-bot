@@ -183,7 +183,7 @@
    "abstand": 96.34114285714287,
    "start": 1794897900,
    "ende": 1794945600,
-   "status": "wartet"
+   "status": "verfallen"
   },
   "ADA Short|1794873600": {
    "s": "ADA Short",
@@ -197,7 +197,7 @@
    "abstand": 0.009582857142857145,
    "start": 1794897900,
    "ende": 1794945600,
-   "status": "wartet"
+   "status": "verfallen"
   },
   "SOL Long|1794873600": {
    "s": "SOL Long",
@@ -216,14 +216,14 @@
  },
  "trades": [],
  "letzte_5m": {
-  "ADAUSDT": 1794945300,
-  "BTCUSDT": 1794945300,
-  "ETHUSDT": 1794945300,
-  "SOLUSDT": 1794945300
+  "ADAUSDT": 1794945900,
+  "BTCUSDT": 1794945900,
+  "ETHUSDT": 1794945900,
+  "SOLUSDT": 1794945900
  },
  "nr": 0,
  "gemeldet_tag": 1794873600,
- "letzter_lauf": 1794945674,
+ "letzter_lauf": 1794946244,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W46"
 }
