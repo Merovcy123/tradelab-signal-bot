@@ -337,7 +337,7 @@
    "abstand": 0.008931428571428573,
    "start": 1795070700,
    "ende": 1795118400,
-   "status": "wartet"
+   "status": "gekauft"
   },
   "SOL Long|1795046400": {
    "s": "SOL Long",
@@ -370,17 +370,33 @@
    "risiko_sim": 3.0,
    "menge": 0.03321922792186836,
    "status": "offen"
+  },
+  {
+   "nr": 2,
+   "s": "ADA Short",
+   "sym": "ADAUSDT",
+   "seite": -1,
+   "ts": 1795088700,
+   "ab": 1795089000,
+   "einstieg": 0.15474928571428573,
+   "stop": 0.1636807142857143,
+   "ziel": 0.13688642857142858,
+   "abstand": 0.008931428571428573,
+   "risiko": 3.0,
+   "risiko_sim": 3.0,
+   "menge": 335.89251439539345,
+   "status": "offen"
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795088100,
-  "BTCUSDT": 1795088100,
-  "ETHUSDT": 1795088100,
-  "SOLUSDT": 1795088100
+  "ADAUSDT": 1795088700,
+  "BTCUSDT": 1795088700,
+  "ETHUSDT": 1795088700,
+  "SOLUSDT": 1795088700
  },
- "nr": 1,
+ "nr": 2,
  "gemeldet_tag": 1795046400,
- "letzter_lauf": 1795088447,
+ "letzter_lauf": 1795089048,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W46"
 }
