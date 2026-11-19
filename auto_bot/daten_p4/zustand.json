@@ -323,7 +323,7 @@
    "abstand": 90.30914285714289,
    "start": 1795070700,
    "ende": 1795118400,
-   "status": "wartet"
+   "status": "gekauft"
   },
   "ADA Short|1795046400": {
    "s": "ADA Short",
@@ -354,16 +354,33 @@
    "status": "kein_trade"
   }
  },
- "trades": [],
+ "trades": [
+  {
+   "nr": 1,
+   "s": "ETH Short",
+   "sym": "ETHUSDT",
+   "seite": -1,
+   "ts": 1795071600,
+   "ab": 1795071900,
+   "einstieg": 1811.0559285714287,
+   "stop": 1901.3650714285716,
+   "ziel": 1630.437642857143,
+   "abstand": 90.30914285714289,
+   "risiko": 3.0,
+   "risiko_sim": 3.0,
+   "menge": 0.03321922792186836,
+   "status": "offen"
+  }
+ ],
  "letzte_5m": {
-  "ADAUSDT": 1795071300,
-  "BTCUSDT": 1795071300,
-  "ETHUSDT": 1795071300,
-  "SOLUSDT": 1795071300
+  "ADAUSDT": 1795071900,
+  "BTCUSDT": 1795071900,
+  "ETHUSDT": 1795071900,
+  "SOLUSDT": 1795071900
  },
- "nr": 0,
+ "nr": 1,
  "gemeldet_tag": 1795046400,
- "letzter_lauf": 1795071680,
+ "letzter_lauf": 1795072245,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W46"
 }
