@@ -76,15 +76,15 @@
    "nachricht": 1795154400,
    "ende": 1795204800,
    "status": "kein_trade",
-   "gemeldet": false
+   "gemeldet": true
   }
  },
  "trades": {},
- "letzte_5m": 1795153500,
+ "letzte_5m": 1795154100,
  "hoch": 100000.0,
  "halt": false,
  "broker": {},
  "konto": 100000.0,
- "letzter_lauf": 1795153850,
+ "letzter_lauf": 1795154480,
  "bericht_woche": "2026-W46"
 }
