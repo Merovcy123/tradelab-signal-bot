@@ -1,6 +1,6 @@
 {
- "konto": 100.0,
- "hoch": 100.0,
+ "konto": 105.94585430829657,
+ "hoch": 105.94585430829657,
  "halt": false,
  "plaene": {
   "BTC Long|1794700800": {
@@ -439,7 +439,12 @@
    "risiko": 3.0,
    "risiko_sim": 3.0,
    "menge": 0.03321922792186836,
-   "status": "offen"
+   "status": "zu",
+   "ausstieg": 1630.437642857143,
+   "grund": "Ziel",
+   "r": 1.9819514360988604,
+   "gewinn": 5.945854308296581,
+   "ts_zu": 1795190700
   },
   {
    "nr": 2,
@@ -459,14 +464,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795190100,
-  "BTCUSDT": 1795190100,
-  "ETHUSDT": 1795190100,
-  "SOLUSDT": 1795190100
+  "ADAUSDT": 1795190700,
+  "BTCUSDT": 1795190700,
+  "ETHUSDT": 1795190700,
+  "SOLUSDT": 1795190700
  },
  "nr": 2,
  "gemeldet_tag": 1795132800,
- "letzter_lauf": 1795190633,
+ "letzter_lauf": 1795191047,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W46"
 }
