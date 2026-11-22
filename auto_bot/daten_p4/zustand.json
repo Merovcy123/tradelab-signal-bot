@@ -407,7 +407,7 @@
    "abstand": 0.008765714285714285,
    "start": 1795329900,
    "ende": 1795377600,
-   "status": "wartet"
+   "status": "verfallen"
   },
   "SOL Long|1795305600": {
    "s": "SOL Long",
@@ -501,14 +501,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795377300,
-  "BTCUSDT": 1795377300,
-  "ETHUSDT": 1795377300,
-  "SOLUSDT": 1795377300
+  "ADAUSDT": 1795377900,
+  "BTCUSDT": 1795377900,
+  "ETHUSDT": 1795377900,
+  "SOLUSDT": 1795377900
  },
  "nr": 4,
  "gemeldet_tag": 1795305600,
- "letzter_lauf": 1795377673,
+ "letzter_lauf": 1795378243,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W47"
 }
