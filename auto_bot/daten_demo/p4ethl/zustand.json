@@ -90,14 +90,27 @@
    "ende": 1795291200,
    "status": "kein_trade",
    "gemeldet": true
+  },
+  "1795305600": {
+   "tag": 1795305600,
+   "eroeffnung": 1685.62,
+   "gestern_schluss": 1685.63,
+   "sma": 2267.853,
+   "atr": 123.27785714285717,
+   "trend": false,
+   "start": 1795329900,
+   "nachricht": 1795327200,
+   "ende": 1795377600,
+   "status": "kein_trade",
+   "gemeldet": false
   }
  },
  "trades": {},
- "letzte_5m": 1795304700,
+ "letzte_5m": 1795305300,
  "hoch": 100000.0,
  "halt": false,
  "broker": {},
  "konto": 100000.0,
- "letzter_lauf": 1795305044,
+ "letzter_lauf": 1795305678,
  "bericht_woche": "2026-W46"
 }
