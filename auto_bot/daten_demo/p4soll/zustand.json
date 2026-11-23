@@ -119,11 +119,11 @@
   }
  },
  "trades": {},
- "letzte_5m": 1795422300,
+ "letzte_5m": 1795422900,
  "hoch": 100000.0,
  "halt": false,
  "broker": {},
  "konto": 100000.0,
- "letzter_lauf": 1795422675,
+ "letzter_lauf": 1795423251,
  "bericht_woche": "2026-W47"
 }
