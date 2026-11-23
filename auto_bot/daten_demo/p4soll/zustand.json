@@ -115,15 +115,15 @@
    "nachricht": 1795413600,
    "ende": 1795464000,
    "status": "kein_trade",
-   "gemeldet": false
+   "gemeldet": true
   }
  },
  "trades": {},
- "letzte_5m": 1795412700,
+ "letzte_5m": 1795413300,
  "hoch": 100000.0,
  "halt": false,
  "broker": {},
  "konto": 100000.0,
- "letzter_lauf": 1795413047,
+ "letzter_lauf": 1795413679,
  "bericht_woche": "2026-W47"
 }
