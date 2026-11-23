@@ -1,5 +1,5 @@
 {
- "konto": 108.48650511337294,
+ "konto": 105.07676129418644,
  "hoch": 111.89907309428506,
  "halt": false,
  "plaene": {
@@ -502,7 +502,12 @@
    "risiko": 3.3569721928285516,
    "risiko_sim": 3.3569721928285516,
    "menge": 0.034038677652978834,
-   "status": "offen"
+   "status": "zu",
+   "ausstieg": 1821.2256428571427,
+   "grund": "Stop",
+   "r": -1.0157200069963896,
+   "gewinn": -3.409743819186502,
+   "ts_zu": 1795443600
   },
   {
    "nr": 5,
@@ -538,14 +543,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795442700,
-  "BTCUSDT": 1795442700,
-  "ETHUSDT": 1795442700,
-  "SOLUSDT": 1795442700
+  "ADAUSDT": 1795443300,
+  "BTCUSDT": 1795443300,
+  "ETHUSDT": 1795443300,
+  "SOLUSDT": 1795443300
  },
  "nr": 6,
  "gemeldet_tag": 1795392000,
- "letzter_lauf": 1795443045,
+ "letzter_lauf": 1795443644,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W47"
 }
