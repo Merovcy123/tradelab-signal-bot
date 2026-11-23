@@ -1,3 +1,4 @@
 strategie;richtung;eroeffnet_utc;geschlossen_utc;einstieg;stop;ziel;ausstieg;grund;r;gewinn;konto
 ETH Short;Short;2026-11-19 07:00;2026-11-20 16:05;1811.06;1901.37;1630.44;1630.44;Ziel;1.982;5.9459;105.9459
 ADA Short;Short;2026-11-19 11:45;2026-11-21 03:35;0.154749;0.163681;0.136886;0.136886;Ziel;1.984;5.9532;111.8991
+ETH Short;Short;2026-11-21 06:50;2026-11-23 03:25;1656.87;1746.9;1476.78;1746.9;Stop;-1.017;-3.4126;108.4865
