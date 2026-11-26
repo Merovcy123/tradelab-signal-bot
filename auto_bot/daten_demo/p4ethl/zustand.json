@@ -1,18 +1,5 @@
 {
  "plaene": {
-  "1794700800": {
-   "tag": 1794700800,
-   "eroeffnung": 1769.28,
-   "gestern_schluss": 1769.2,
-   "sma": 2397.6242,
-   "atr": 113.05071428571428,
-   "trend": false,
-   "start": 1794725100,
-   "nachricht": 1794722400,
-   "ende": 1794772800,
-   "status": "kein_trade",
-   "gemeldet": true
-  },
   "1794787200": {
    "tag": 1794787200,
    "eroeffnung": 1835.35,
@@ -142,14 +129,27 @@
    "ende": 1795636800,
    "status": "kein_trade",
    "gemeldet": true
+  },
+  "1795651200": {
+   "tag": 1795651200,
+   "eroeffnung": 1692.65,
+   "gestern_schluss": 1692.65,
+   "sma": 2187.575,
+   "atr": 117.43357142857144,
+   "trend": false,
+   "start": 1795675500,
+   "nachricht": 1795672800,
+   "ende": 1795723200,
+   "status": "kein_trade",
+   "gemeldet": false
   }
  },
  "trades": {},
- "letzte_5m": 1795650300,
+ "letzte_5m": 1795650900,
  "hoch": 100000.0,
  "halt": false,
  "broker": {},
  "konto": 100000.0,
- "letzter_lauf": 1795650655,
+ "letzter_lauf": 1795651282,
  "bericht_woche": "2026-W47"
 }
