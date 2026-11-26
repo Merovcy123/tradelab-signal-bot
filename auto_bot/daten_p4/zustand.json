@@ -393,7 +393,7 @@
    "abstand": 93.94685714285716,
    "start": 1795675500,
    "ende": 1795723200,
-   "status": "wartet"
+   "status": "verpasst"
   },
   "ADA Short|1795651200": {
    "s": "ADA Short",
@@ -553,14 +553,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795651500,
-  "BTCUSDT": 1795651500,
-  "ETHUSDT": 1795651500,
-  "SOLUSDT": 1795651500
+  "ADAUSDT": 1795652100,
+  "BTCUSDT": 1795652100,
+  "ETHUSDT": 1795652100,
+  "SOLUSDT": 1795652100
  },
  "nr": 6,
  "gemeldet_tag": 1795564800,
- "letzter_lauf": 1795651842,
+ "letzter_lauf": 1795652445,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W47"
 }
