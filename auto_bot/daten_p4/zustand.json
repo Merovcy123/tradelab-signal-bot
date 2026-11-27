@@ -3,76 +3,6 @@
  "hoch": 113.2710102907996,
  "halt": false,
  "plaene": {
-  "BTC Long|1795219200": {
-   "s": "BTC Long",
-   "sym": "BTCUSDT",
-   "seite": 1,
-   "tag": 1795219200,
-   "trend": false,
-   "sma": 77717.7166,
-   "schluss": 58951.51,
-   "limit": 58090.23678571429,
-   "abstand": 2296.7285714285713,
-   "start": 1795243500,
-   "ende": 1795291200,
-   "status": "kein_trade"
-  },
-  "ETH Long|1795219200": {
-   "s": "ETH Long",
-   "sym": "ETHUSDT",
-   "seite": 1,
-   "tag": 1795219200,
-   "trend": false,
-   "sma": 2287.5122,
-   "schluss": 1623.09,
-   "limit": 1589.3349999999998,
-   "abstand": 90.04000000000002,
-   "start": 1795243500,
-   "ende": 1795291200,
-   "status": "kein_trade"
-  },
-  "ETH Short|1795219200": {
-   "s": "ETH Short",
-   "sym": "ETHUSDT",
-   "seite": -1,
-   "tag": 1795219200,
-   "trend": true,
-   "sma": 2033.7244999999998,
-   "schluss": 1623.09,
-   "limit": 1656.865,
-   "abstand": 90.04000000000002,
-   "start": 1795243500,
-   "ende": 1795291200,
-   "status": "gekauft"
-  },
-  "ADA Short|1795219200": {
-   "s": "ADA Short",
-   "sym": "ADAUSDT",
-   "seite": -1,
-   "tag": 1795219200,
-   "trend": true,
-   "sma": 0.1709,
-   "schluss": 0.1431,
-   "limit": 0.14634785714285714,
-   "abstand": 0.008394285714285714,
-   "start": 1795243500,
-   "ende": 1795291200,
-   "status": "verfallen"
-  },
-  "SOL Long|1795219200": {
-   "s": "SOL Long",
-   "sym": "SOLUSDT",
-   "seite": 1,
-   "tag": 1795219200,
-   "trend": false,
-   "sma": 82.4765,
-   "schluss": 68.88,
-   "limit": 67.47907142857143,
-   "abstand": 3.709142857142858,
-   "start": 1795243500,
-   "ende": 1795291200,
-   "status": "kein_trade"
-  },
   "BTC Long|1795305600": {
    "s": "BTC Long",
    "sym": "BTCUSDT",
@@ -422,6 +352,76 @@
    "start": 1795675500,
    "ende": 1795723200,
    "status": "kein_trade"
+  },
+  "BTC Long|1795737600": {
+   "s": "BTC Long",
+   "sym": "BTCUSDT",
+   "seite": 1,
+   "tag": 1795737600,
+   "trend": false,
+   "sma": 74781.4124,
+   "schluss": 60577.18,
+   "limit": 59550.007,
+   "abstand": 2739.128,
+   "start": 1795761900,
+   "ende": 1795809600,
+   "status": "kein_trade"
+  },
+  "ETH Long|1795737600": {
+   "s": "ETH Long",
+   "sym": "ETHUSDT",
+   "seite": 1,
+   "tag": 1795737600,
+   "trend": false,
+   "sma": 2169.8892,
+   "schluss": 1689.85,
+   "limit": 1655.0600714285713,
+   "abstand": 92.77314285714286,
+   "start": 1795761900,
+   "ende": 1795809600,
+   "status": "kein_trade"
+  },
+  "ETH Short|1795737600": {
+   "s": "ETH Short",
+   "sym": "ETHUSDT",
+   "seite": -1,
+   "tag": 1795737600,
+   "trend": true,
+   "sma": 1857.6525000000001,
+   "schluss": 1689.85,
+   "limit": 1724.6399285714285,
+   "abstand": 92.77314285714286,
+   "start": 1795761900,
+   "ende": 1795809600,
+   "status": "wartet"
+  },
+  "ADA Short|1795737600": {
+   "s": "ADA Short",
+   "sym": "ADAUSDT",
+   "seite": -1,
+   "tag": 1795737600,
+   "trend": true,
+   "sma": 0.15805,
+   "schluss": 0.1486,
+   "limit": 0.15185071428571428,
+   "abstand": 0.00866857142857143,
+   "start": 1795761900,
+   "ende": 1795809600,
+   "status": "wartet"
+  },
+  "SOL Long|1795737600": {
+   "s": "SOL Long",
+   "sym": "SOLUSDT",
+   "seite": 1,
+   "tag": 1795737600,
+   "trend": false,
+   "sma": 75.96900000000001,
+   "schluss": 71.03,
+   "limit": 69.50471428571429,
+   "abstand": 4.067428571428574,
+   "start": 1795761900,
+   "ende": 1795809600,
+   "status": "kein_trade"
   }
  },
  "trades": [
@@ -553,14 +553,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795736700,
-  "BTCUSDT": 1795736700,
-  "ETHUSDT": 1795736700,
-  "SOLUSDT": 1795736700
+  "ADAUSDT": 1795737300,
+  "BTCUSDT": 1795737300,
+  "ETHUSDT": 1795737300,
+  "SOLUSDT": 1795737300
  },
  "nr": 6,
  "gemeldet_tag": 1795651200,
- "letzter_lauf": 1795737050,
+ "letzter_lauf": 1795737674,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W47"
 }
