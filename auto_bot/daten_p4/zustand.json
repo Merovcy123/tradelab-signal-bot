@@ -553,14 +553,14 @@
   }
  ],
  "letzte_5m": {
-  "ADAUSDT": 1795787700,
-  "BTCUSDT": 1795787700,
-  "ETHUSDT": 1795787700,
-  "SOLUSDT": 1795787700
+  "ADAUSDT": 1795788300,
+  "BTCUSDT": 1795788300,
+  "ETHUSDT": 1795788300,
+  "SOLUSDT": 1795788300
  },
  "nr": 6,
  "gemeldet_tag": 1795737600,
- "letzter_lauf": 1795788081,
+ "letzter_lauf": 1795788646,
  "fehler_in_folge": 0,
  "bericht_woche": "2026-W47"
 }
